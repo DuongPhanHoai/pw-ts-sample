@@ -1,33 +1,25 @@
 import { test, expect } from "@playwright/test";
+import { LoginPage } from "./pages/LoginPage";
+import { InventoryPage } from "./pages/InventoryPage";
 
 const STORAGE = "storageState.json";
 
-test("login and save auth state", async ({ browser }) => {
-  const context = await browser.newContext();
-  const page = await context.newPage();
+test("login and save auth state", async ({ page }) => {
+  // log all requests
+  page.on("request", (req) => {
+    console.log(">>", req.method(), req.url());
+  });
 
-  await page.goto("/");
+  const login = new LoginPage(page);
 
-  await page.locator("#user-name").fill("standard_user");
-  await page.locator("#password").fill("secret_sauce");
-  await page.locator("#login-button").click();
-
-  // Recommended: wait for URL instead of waitForNavigation
-  await page.waitForURL("**/inventory.html", { waitUntil: "load" });
-
-  await expect(page.locator(".inventory_list")).toBeVisible();
-
-  await context.storageState({ path: STORAGE });
-  await context.close();
+  await login.goto();
+  await login.loginAsStandardUser();
 });
 
-test("reuse saved state to open inventory", async ({ browser }) => {
-  const context = await browser.newContext({ storageState: STORAGE });
-  const page = await context.newPage();
-
-  await page.goto("/inventory.html");
-  await expect(page.locator(".inventory_list")).toBeVisible();
-  await expect(page.locator(".inventory_item_name").first()).toBeVisible();
-
-  await context.close();
+test("reuse saved state to open inventory", async ({ page }) => {
+  const login = new LoginPage(page);
+  await login.goto();
+  await login.loginAsStandardUser();
+  const inventory = new InventoryPage(page);
+  await inventory.smokePage();
 });

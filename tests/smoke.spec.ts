@@ -1,9 +1,8 @@
 import { test, expect } from "@playwright/test";
+import { LoginPage } from "./pages/LoginPage";
 
 test("smoke - saucedemo login page", async ({ page }) => {
-  await page.goto("/"); // uses baseURL from config
-  await expect(page).toHaveTitle(/Swag Labs/);
-  await expect(page.locator("#login-button")).toBeVisible();
-  await expect(page.locator("#user-name")).toBeVisible();
-  await expect(page.locator("#password")).toBeVisible();
+  const login = new LoginPage(page);
+  await login.goto();
+  await login.smokePage();
 });

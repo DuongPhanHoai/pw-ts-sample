@@ -1,9 +1,12 @@
 import { test, expect } from "@playwright/test";
-import { loginAsStandardUser } from "./helpers";
+import { LoginPage } from "./pages/LoginPage";
+import { InventoryPage } from "./pages/InventoryPage";
 
 test.describe("inventory actions", () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsStandardUser(page);
+    const login = new LoginPage(page);
+    await login.goto();
+    await login.loginAsStandardUser();
   });
 
   test("has at least one product", async ({ page }) => {
@@ -12,8 +15,10 @@ test.describe("inventory actions", () => {
   });
 
   test("can add backpack to cart", async ({ page }) => {
-    await page.locator('[data-test="add-to-cart-sauce-labs-backpack"]').click();
-    await page.click(".shopping_cart_link");
-    await expect(page.locator(".cart_item")).toHaveCount(1);
+    const inventory = new InventoryPage(page);
+
+    await inventory.addBackpackToCart();
+    await inventory.openCart();
+    await inventory.expectItemsInCart(1);
   });
 });
