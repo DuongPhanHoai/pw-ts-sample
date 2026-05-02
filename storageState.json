@@ -5,10 +5,10 @@
       "value": "standard_user",
       "domain": "www.saucedemo.com",
       "path": "/",
-      "expires": 1777712993,
+      "expires": 1777714407,
       "httpOnly": false,
       "secure": false,
-      "sameSite": "None"
+      "sameSite": "Lax"
     }
   ],
   "origins": [
@@ -16,12 +16,12 @@
       "origin": "https://www.saucedemo.com",
       "localStorage": [
         {
-          "name": "backtrace-last-active",
-          "value": "1777712392637"
+          "name": "backtrace-guid",
+          "value": "e5c9ebf3-a683-499e-87c5-1a6d037a19f1"
         },
         {
-          "name": "backtrace-guid",
-          "value": "23ad17d7-0b46-46db-bcec-8598ca74c71d"
+          "name": "backtrace-last-active",
+          "value": "1777713807053"
         }
       ]
     }
