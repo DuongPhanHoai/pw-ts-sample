@@ -12,7 +12,7 @@ test.describe("inventory actions", () => {
   });
 
   test("can add backpack to cart", async ({ page }) => {
-    await page.locator('[data-test="add-to-cart-sauce-labs-bbackpack"]').click();
+    await page.locator('[data-test="add-to-cart-sauce-labs-backpack"]').click();
     await page.click(".shopping_cart_link");
     await expect(page.locator(".cart_item")).toHaveCount(1);
   });
