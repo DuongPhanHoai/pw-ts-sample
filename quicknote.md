@@ -13,3 +13,5 @@
 >test site: https://www.saucedemo.com/
 
 >debug command: npx playwright test tests/cart-and-checkout.spec.ts --project=chromium --headed --debug
+
+3. Pay attention on context saving of POM
