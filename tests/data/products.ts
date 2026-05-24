@@ -1,17 +1,22 @@
-export type ProductRow = {
-  /** Suffix used in the data-test attribute, e.g. add-to-cart-<slug>. */
-  slug: string;
-  name: string;
+/**
+ * Environment-aware resolver. Re-exports the active environment's product set.
+ * To change envs, set TEST_ENV (see tests/config/env.ts).
+ */
+
+import type { Env } from "../config/env";
+import { getEnv } from "../config/env";
+import type { ProductRow } from "./types";
+import { products as devProducts } from "./dev/products";
+import { products as testProducts } from "./test/products";
+import { products as stgProducts } from "./stg/products";
+import { products as prdProducts } from "./prd/products";
+
+const byEnv: Record<Env, ProductRow[]> = {
+  dev: devProducts,
+  test: testProducts,
+  stg: stgProducts,
+  prd: prdProducts,
 };
 
-export const products: ProductRow[] = [
-  { slug: "sauce-labs-backpack", name: "Sauce Labs Backpack" },
-  { slug: "sauce-labs-bike-light", name: "Sauce Labs Bike Light" },
-  { slug: "sauce-labs-bolt-t-shirt", name: "Sauce Labs Bolt T-Shirt" },
-  { slug: "sauce-labs-fleece-jacket", name: "Sauce Labs Fleece Jacket" },
-  { slug: "sauce-labs-onesie", name: "Sauce Labs Onesie" },
-  {
-    slug: "test.allthethings()-t-shirt-(red)",
-    name: "Test.allTheThings() T-Shirt (Red)",
-  },
-];
+export type { ProductRow } from "./types";
+export const products: ProductRow[] = byEnv[getEnv()];

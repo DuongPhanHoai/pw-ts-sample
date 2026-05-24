@@ -1,11 +1,22 @@
-export type CustomerRow = {
-  firstName: string;
-  lastName: string;
-  postalCode: string;
+/**
+ * Environment-aware resolver. Re-exports the active environment's customer set.
+ * To change envs, set TEST_ENV (see tests/config/env.ts).
+ */
+
+import type { Env } from "../config/env";
+import { getEnv } from "../config/env";
+import type { CustomerRow } from "./types";
+import { customers as devCustomers } from "./dev/customers";
+import { customers as testCustomers } from "./test/customers";
+import { customers as stgCustomers } from "./stg/customers";
+import { customers as prdCustomers } from "./prd/customers";
+
+const byEnv: Record<Env, CustomerRow[]> = {
+  dev: devCustomers,
+  test: testCustomers,
+  stg: stgCustomers,
+  prd: prdCustomers,
 };
 
-export const customers: CustomerRow[] = [
-  { firstName: "Test", lastName: "User", postalCode: "12345" },
-  { firstName: "Jane", lastName: "Doe", postalCode: "90210" },
-  { firstName: "Alex", lastName: "Nguyen", postalCode: "70000" },
-];
+export type { CustomerRow } from "./types";
+export const customers: CustomerRow[] = byEnv[getEnv()];

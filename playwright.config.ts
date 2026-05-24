@@ -1,4 +1,19 @@
 import { defineConfig } from "@playwright/test";
+import { getEnv, getEnvConfig } from "./tests/config/env";
+
+const env = getEnv();
+const envCfg = getEnvConfig();
+
+// Surface the active environment at startup so it's obvious in every test run.
+// Playwright re-imports this config in every worker process, so guard with an
+// env var to print the banner exactly once per invocation.
+if (!process.env.__PW_BANNER_PRINTED) {
+  // eslint-disable-next-line no-console
+  console.log(
+    `\n[playwright] TEST_ENV=${env} | ${envCfg.label} | baseURL=${envCfg.baseURL}\n`,
+  );
+  process.env.__PW_BANNER_PRINTED = "1";
+}
 
 export default defineConfig({
   testDir: "tests",
@@ -8,7 +23,7 @@ export default defineConfig({
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
     headless: true,
-    baseURL: "https://www.saucedemo.com",
+    baseURL: envCfg.baseURL,
     screenshot: "only-on-failure",
     trace: "retain-on-failure", // collects traces on failures
   },

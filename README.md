@@ -28,10 +28,29 @@ pw-ts-sample/
     ├── inventory.spec.ts           # data-driven: add-to-cart per product
     ├── login.spec.ts               # data-driven: success + failure users
     ├── smoke.spec.ts               # smoke check of the login page
-    ├── data/                       # typed data fixtures (data-driven inputs)
-    │   ├── customers.ts            # checkout customer profiles
-    │   ├── products.ts             # inventory products + data-test slugs
-    │   └── users.ts                # login users (positive + negative)
+    ├── config/
+    │   └── env.ts                  # TEST_ENV resolution + per-env baseURL
+    ├── data/                       # typed data fixtures (per-env)
+    │   ├── customers.ts            # resolver: returns active env's customers
+    │   ├── products.ts             # resolver: returns active env's products
+    │   ├── users.ts                # resolver: returns active env's users
+    │   ├── types.ts                # shared row types (UserRow, ProductRow, …)
+    │   ├── dev/                    # minimal smoke set for fast local loop
+    │   │   ├── customers.ts
+    │   │   ├── products.ts
+    │   │   └── users.ts
+    │   ├── test/                   # full coverage matrix (default)
+    │   │   ├── customers.ts
+    │   │   ├── products.ts
+    │   │   └── users.ts
+    │   ├── stg/                    # pre-prod subset (success path only)
+    │   │   ├── customers.ts
+    │   │   ├── products.ts
+    │   │   └── users.ts
+    │   └── prd/                    # production canary (single safe case)
+    │       ├── customers.ts
+    │       ├── products.ts
+    │       └── users.ts
     ├── mocks/
     │   └── sample.mock.spec.ts     # page.route() API mocking example
     └── pages/                      # Page Object Model
@@ -122,6 +141,16 @@ All page interactions live under `tests/pages/`:
 
 Specs import these classes and call high-level methods rather than driving raw selectors, which keeps tests readable and locator changes contained to a single file.
 
+Debug locator: npx playwright codegen  https://sauce-demo.myshopify.com
+
+**getByRole** button, link(\<a>), textbox, checkbox, ..., alert(toast message), dialog (Modal/Popup), status (loading), img
+- name is Accessible Name (aria-label, alt, <label>)
+- combine with name: checked (checkbox), disabled, expanded, level (for heading); Ex: page.getByRole('button',{name:'Send'}); page.getByRole('checkbox',{checked:true})
+  await page.getByRole('row')
+  .filter({ hasText: 'Product A' })
+  .getByRole('button', { name: 'Delete' })
+  .click();
+- Note on alert(), confirm(), or prompt(): page.on('dialog', dialog => dialog.accept());
 ---
 
 ## Data-driven testing
@@ -162,7 +191,53 @@ export const users: UserRow[] = [
 ];
 ```
 
-`cart-and-checkout.spec.ts` does a Cartesian product of `products × customers`, so be mindful of run count when growing those arrays (currently 6 × 3 = 18 cases).
+`cart-and-checkout.spec.ts` does a Cartesian product of `products × customers`, so be mindful of run count when growing those arrays.
+
+---
+
+## Environments (dev / test / stg / prd)
+
+Test data is isolated per environment. The active env is picked from the `TEST_ENV` variable and resolved in [tests/config/env.ts](tests/config/env.ts) — unknown values throw at startup so typos fail loudly.
+
+| Env     | Default? | Users | Products | Customers | Intent                          |
+| ------- | -------- | ----- | -------- | --------- | ------------------------------- |
+| `dev`   |          | 2     | 1        | 1         | Fast local loop, smoke only     |
+| `test`  | ✅       | 5     | 6        | 3         | Full matrix (default)           |
+| `stg`   |          | 2     | 3        | 2         | Pre-prod subset, success path   |
+| `prd`   |          | 1     | 1        | 1         | Production canary, safe-only    |
+
+Each env owns its own `users.ts`, `products.ts`, and `customers.ts` under `tests/data/<env>/`. The top-level resolver files (`tests/data/users.ts`, etc.) re-export the active env's data, so specs don't need to know which env is in play — they just `import { users } from "./data/users"`.
+
+Per-env `baseURL` lives in the same `tests/config/env.ts` (all four point at saucedemo today since it's the only available target — swap them out for real environment URLs in a real project).
+
+### Selecting an environment
+
+```bash
+# bash / zsh
+TEST_ENV=dev  npx playwright test
+TEST_ENV=stg  npx playwright test tests/login.spec.ts
+
+# PowerShell
+$env:TEST_ENV="prd"; npx playwright test
+
+# cmd.exe
+set TEST_ENV=prd && npx playwright test
+```
+
+If `TEST_ENV` is unset, the suite runs against `test`. Every run prints the active env at startup (exactly once, regardless of worker count — guarded by `__PW_BANNER_PRINTED` in `playwright.config.ts`):
+
+```
+[playwright] TEST_ENV=stg | Staging (pre-prod subset) | baseURL=https://www.saucedemo.com
+```
+
+### Adding a new environment
+
+1. Add the value to the `Env` union and `VALID_ENVS` array in `tests/config/env.ts`.
+2. Add a row to `envConfig` with the right `baseURL`.
+3. Create `tests/data/<new-env>/{users,products,customers}.ts`.
+4. Add the env to the `byEnv` map in each of `tests/data/users.ts`, `products.ts`, `customers.ts`.
+
+TypeScript will fail compilation until all four spots are wired up — that's intentional, it keeps the four files honest.
 
 ---
 
