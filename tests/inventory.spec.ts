@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { LoginPage } from "./pages/LoginPage";
 import { InventoryPage } from "./pages/InventoryPage";
-import { products } from "./data/products";
+import { products } from "./data";
 
 test.describe("inventory actions", () => {
   test.beforeEach(async ({ page }) => {

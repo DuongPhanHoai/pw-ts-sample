@@ -1,6 +1,6 @@
 import { test } from "@playwright/test";
 import { LoginPage } from "./pages/LoginPage";
-import { users } from "./data/users";
+import { users } from "./data";
 
 test.describe("login (data-driven)", () => {
   for (const user of users) {

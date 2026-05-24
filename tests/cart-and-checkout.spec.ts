@@ -2,8 +2,7 @@ import { test } from "@playwright/test";
 import { LoginPage } from "./pages/LoginPage";
 import { InventoryPage } from "./pages/InventoryPage";
 import { CheckoutPage } from "./pages/CheckoutPage";
-import { products } from "./data/products";
-import { customers } from "./data/customers";
+import { products, customers } from "./data";
 
 test.describe("cart and checkout (data-driven)", () => {
   for (const product of products) {

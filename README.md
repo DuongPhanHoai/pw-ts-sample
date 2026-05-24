@@ -31,9 +31,7 @@ pw-ts-sample/
     ├── config/
     │   └── env.ts                  # TEST_ENV resolution + per-env baseURL
     ├── data/                       # typed data fixtures (per-env)
-    │   ├── customers.ts            # resolver: returns active env's customers
-    │   ├── products.ts             # resolver: returns active env's products
-    │   ├── users.ts                # resolver: returns active env's users
+    │   ├── index.ts                # single env-aware resolver (users, products, customers)
     │   ├── types.ts                # shared row types (UserRow, ProductRow, …)
     │   ├── dev/                    # minimal smoke set for fast local loop
     │   │   ├── customers.ts
@@ -157,16 +155,18 @@ Debug locator: npx playwright codegen  https://sauce-demo.myshopify.com
 
 Test inputs live in `tests/data/` as typed TypeScript arrays, and the specs `for`-loop over them so every row becomes its own Playwright `test(...)` block. This means each row shows up individually in the report, retries, traces, and `--grep`.
 
-| File                       | Type        | Used by                                       |
-| -------------------------- | ----------- | --------------------------------------------- |
-| `tests/data/users.ts`      | `UserRow[]` | `login.spec.ts` — success + failure scenarios |
-| `tests/data/products.ts`   | `ProductRow[]` | `inventory.spec.ts`, `cart-and-checkout.spec.ts` |
-| `tests/data/customers.ts`  | `CustomerRow[]` | `cart-and-checkout.spec.ts`               |
+All three data dimensions are re-exported from a single env-aware entry point — [tests/data/index.ts](tests/data/index.ts) — so specs use one import line:
+
+| Export                  | Type            | Used by                                         |
+| ----------------------- | --------------- | ----------------------------------------------- |
+| `users`                 | `UserRow[]`     | `login.spec.ts` — success + failure scenarios   |
+| `products`              | `ProductRow[]`  | `inventory.spec.ts`, `cart-and-checkout.spec.ts`|
+| `customers`             | `CustomerRow[]` | `cart-and-checkout.spec.ts`                     |
 
 ### Pattern used in the specs
 
 ```ts
-import { users } from "./data/users";
+import { users } from "./data";
 
 for (const user of users) {
   test(`login: ${user.username}`, async ({ page }) => {
@@ -181,10 +181,10 @@ for (const user of users) {
 
 ### Adding a new row
 
-Just append to the array — no spec changes required:
+Just append to the active env's array — no spec changes required. Example for the default `test` env:
 
 ```ts
-// tests/data/users.ts
+// tests/data/test/users.ts
 export const users: UserRow[] = [
   // ...existing rows...
   { username: "error_user", password: "secret_sauce", shouldLogin: true },
@@ -206,7 +206,7 @@ Test data is isolated per environment. The active env is picked from the `TEST_E
 | `stg`   |          | 2     | 3        | 2         | Pre-prod subset, success path   |
 | `prd`   |          | 1     | 1        | 1         | Production canary, safe-only    |
 
-Each env owns its own `users.ts`, `products.ts`, and `customers.ts` under `tests/data/<env>/`. The top-level resolver files (`tests/data/users.ts`, etc.) re-export the active env's data, so specs don't need to know which env is in play — they just `import { users } from "./data/users"`.
+Each env owns its own `users.ts`, `products.ts`, and `customers.ts` under `tests/data/<env>/`. A single resolver at [tests/data/index.ts](tests/data/index.ts) re-exports the active env's data, so specs don't need to know which env is in play — they just `import { users, products, customers } from "./data"`.
 
 Per-env `baseURL` lives in the same `tests/config/env.ts` (all four point at saucedemo today since it's the only available target — swap them out for real environment URLs in a real project).
 
@@ -235,9 +235,9 @@ If `TEST_ENV` is unset, the suite runs against `test`. Every run prints the acti
 1. Add the value to the `Env` union and `VALID_ENVS` array in `tests/config/env.ts`.
 2. Add a row to `envConfig` with the right `baseURL`.
 3. Create `tests/data/<new-env>/{users,products,customers}.ts`.
-4. Add the env to the `byEnv` map in each of `tests/data/users.ts`, `products.ts`, `customers.ts`.
+4. Add the env to the `byEnv` map in `tests/data/index.ts`.
 
-TypeScript will fail compilation until all four spots are wired up — that's intentional, it keeps the four files honest.
+TypeScript will fail compilation until all four spots are wired up — that's intentional, it keeps the env registry honest.
 
 ---
 
