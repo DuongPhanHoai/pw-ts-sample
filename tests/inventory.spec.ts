@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { LoginPage } from "./pages/LoginPage";
 import { InventoryPage } from "./pages/InventoryPage";
+import { products } from "./data/products";
 
 test.describe("inventory actions", () => {
   test.beforeEach(async ({ page }) => {
@@ -14,11 +15,12 @@ test.describe("inventory actions", () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  test("can add backpack to cart", async ({ page }) => {
-    const inventory = new InventoryPage(page);
-
-    await inventory.addBackpackToCart();
-    await inventory.openCart();
-    await inventory.expectItemsInCart(1);
-  });
+  for (const product of products) {
+    test(`can add "${product.name}" to cart`, async ({ page }) => {
+      const inventory = new InventoryPage(page);
+      await inventory.addItemToCart(product.slug);
+      await inventory.openCart();
+      await inventory.expectItemsInCart(1);
+    });
+  }
 });

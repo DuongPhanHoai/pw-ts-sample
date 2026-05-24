@@ -7,12 +7,23 @@ export class LoginPage {
     await this.page.goto("/");
   }
 
-  async loginAsStandardUser() {
-    await this.page.locator("#user-name").fill("standard_user");
-    await this.page.locator("#password").fill("secret_sauce");
+  /** Fill the form and click submit. No post-conditions — caller decides what success looks like. */
+  async loginAs(username: string, password: string) {
+    await this.page.locator("#user-name").fill(username);
+    await this.page.locator("#password").fill(password);
     await this.page.locator("#login-button").click();
+  }
+
+  /** Wait for the inventory page to load — call after a successful login. */
+  async expectInventoryLoaded() {
     await this.page.waitForURL("**/inventory.html", { waitUntil: "load" });
     await expect(this.page.locator(".inventory_list")).toBeVisible();
+  }
+
+  /** Convenience: login as the default happy-path user and assert inventory is reachable. */
+  async loginAsStandardUser() {
+    await this.loginAs("standard_user", "secret_sauce");
+    await this.expectInventoryLoaded();
   }
 
   async assertError(message: string) {

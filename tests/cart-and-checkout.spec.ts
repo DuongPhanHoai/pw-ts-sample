@@ -1,22 +1,29 @@
-import { test, expect } from "@playwright/test";
+import { test } from "@playwright/test";
 import { LoginPage } from "./pages/LoginPage";
 import { InventoryPage } from "./pages/InventoryPage";
 import { CheckoutPage } from "./pages/CheckoutPage";
+import { products } from "./data/products";
+import { customers } from "./data/customers";
 
-test("add item to cart and checkout", async ({ page }) => {
-  const login = new LoginPage(page);
-  const inventory = new InventoryPage(page);
-  const checkout = new CheckoutPage(page);
+test.describe("cart and checkout (data-driven)", () => {
+  for (const product of products) {
+    for (const customer of customers) {
+      test(`checkout "${product.name}" as ${customer.firstName} ${customer.lastName}`, async ({
+        page,
+      }) => {
+        const login = new LoginPage(page);
+        const inventory = new InventoryPage(page);
+        const checkout = new CheckoutPage(page);
 
-  // Login
-  await login.goto();
-  await login.loginAsStandardUser();
+        await login.goto();
+        await login.loginAsStandardUser();
 
-  // Add first item to cart (robust for Chromium)
-  await inventory.addBackpackToCart();
-  await inventory.openCart();
-  await inventory.expectItemsInCart(1);
+        await inventory.addItemToCart(product.slug);
+        await inventory.openCart();
+        await inventory.expectItemsInCart(1);
 
-  // Checkout
-  await checkout.checkoutFullFlow();
+        await checkout.checkoutFullFlow(customer);
+      });
+    }
+  }
 });

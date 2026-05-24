@@ -3,10 +3,14 @@ import { Page, expect } from "@playwright/test";
 export class InventoryPage {
   constructor(private page: Page) {}
 
+  /** Click the add-to-cart button for a product identified by its data-test slug. */
+  async addItemToCart(slug: string) {
+    await this.page.locator(`[data-test="add-to-cart-${slug}"]`).click();
+  }
+
+  /** Convenience wrapper kept for backward compatibility. */
   async addBackpackToCart() {
-    await this.page
-      .locator('[data-test="add-to-cart-sauce-labs-backpack"]')
-      .click();
+    await this.addItemToCart("sauce-labs-backpack");
   }
 
   async openCart() {

@@ -1,8 +1,8 @@
 # pw-ts-sample
 
-A sample Playwright + TypeScript end-to-end test suite that exercises [https://www.saucedemo.com](https://www.saucedemo.com) using the Page Object Model (POM).
+A sample Playwright + TypeScript end-to-end test suite that exercises [https://www.saucedemo.com](https://www.saucedemo.com) using the **Page Object Model (POM)** and **data-driven testing**.
 
-The suite covers login, inventory browsing, add-to-cart, the full checkout flow, and a simple API-mocking example. It runs on Chromium by default and uploads an HTML report from CI.
+The suite covers login, inventory browsing, add-to-cart, the full checkout flow, and a simple API-mocking example. Login, add-to-cart, and checkout specs are parameterized over typed data fixtures, so adding a new user, product, or customer profile is a one-line change. It runs on Chromium by default and uploads an HTML report from CI.
 
 ---
 
@@ -24,10 +24,14 @@ pw-ts-sample/
 ├── test-results/                   # generated run artifacts (gitignored)
 │   └── .last-run.json
 └── tests/
-    ├── cart-and-checkout.spec.ts   # add-to-cart + full checkout flow
-    ├── inventory.spec.ts           # inventory listing & add-to-cart assertions
-    ├── login.spec.ts               # login + reuse auth state
+    ├── cart-and-checkout.spec.ts   # data-driven: products × customers
+    ├── inventory.spec.ts           # data-driven: add-to-cart per product
+    ├── login.spec.ts               # data-driven: success + failure users
     ├── smoke.spec.ts               # smoke check of the login page
+    ├── data/                       # typed data fixtures (data-driven inputs)
+    │   ├── customers.ts            # checkout customer profiles
+    │   ├── products.ts             # inventory products + data-test slugs
+    │   └── users.ts                # login users (positive + negative)
     ├── mocks/
     │   └── sample.mock.spec.ts     # page.route() API mocking example
     └── pages/                      # Page Object Model
@@ -112,11 +116,53 @@ From `playwright.config.ts`:
 
 All page interactions live under `tests/pages/`:
 
-- **`LoginPage.ts`** — `goto()`, `loginAsStandardUser()`, `assertError()`, `smokePage()`
-- **`InventoryPage.ts`** — `addBackpackToCart()`, `openCart()`, `expectItemsInPage()`, `expectItemsInCart()`, `smokePage()`
-- **`CheckoutPage.ts`** — `checkoutFullFlow()`
+- **`LoginPage.ts`** — `goto()`, `loginAs(user, pass)`, `loginAsStandardUser()`, `expectInventoryLoaded()`, `assertError()`, `smokePage()`
+- **`InventoryPage.ts`** — `addItemToCart(slug)`, `addBackpackToCart()`, `openCart()`, `expectItemsInPage()`, `expectItemsInCart()`, `smokePage()`
+- **`CheckoutPage.ts`** — `checkoutFullFlow(customer)`
 
 Specs import these classes and call high-level methods rather than driving raw selectors, which keeps tests readable and locator changes contained to a single file.
+
+---
+
+## Data-driven testing
+
+Test inputs live in `tests/data/` as typed TypeScript arrays, and the specs `for`-loop over them so every row becomes its own Playwright `test(...)` block. This means each row shows up individually in the report, retries, traces, and `--grep`.
+
+| File                       | Type        | Used by                                       |
+| -------------------------- | ----------- | --------------------------------------------- |
+| `tests/data/users.ts`      | `UserRow[]` | `login.spec.ts` — success + failure scenarios |
+| `tests/data/products.ts`   | `ProductRow[]` | `inventory.spec.ts`, `cart-and-checkout.spec.ts` |
+| `tests/data/customers.ts`  | `CustomerRow[]` | `cart-and-checkout.spec.ts`               |
+
+### Pattern used in the specs
+
+```ts
+import { users } from "./data/users";
+
+for (const user of users) {
+  test(`login: ${user.username}`, async ({ page }) => {
+    const login = new LoginPage(page);
+    await login.goto();
+    await login.loginAs(user.username, user.password);
+    if (user.shouldLogin) await login.expectInventoryLoaded();
+    else await login.assertError(user.expectedError!);
+  });
+}
+```
+
+### Adding a new row
+
+Just append to the array — no spec changes required:
+
+```ts
+// tests/data/users.ts
+export const users: UserRow[] = [
+  // ...existing rows...
+  { username: "error_user", password: "secret_sauce", shouldLogin: true },
+];
+```
+
+`cart-and-checkout.spec.ts` does a Cartesian product of `products × customers`, so be mindful of run count when growing those arrays (currently 6 × 3 = 18 cases).
 
 ---
 

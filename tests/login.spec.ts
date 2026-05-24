@@ -1,25 +1,20 @@
-import { test, expect } from "@playwright/test";
+import { test } from "@playwright/test";
 import { LoginPage } from "./pages/LoginPage";
-import { InventoryPage } from "./pages/InventoryPage";
+import { users } from "./data/users";
 
-const STORAGE = "storageState.json";
+test.describe("login (data-driven)", () => {
+  for (const user of users) {
+    const label = user.shouldLogin ? "success" : "failure";
+    test(`login: ${user.username} (${label})`, async ({ page }) => {
+      const login = new LoginPage(page);
+      await login.goto();
+      await login.loginAs(user.username, user.password);
 
-test("login and save auth state", async ({ page }) => {
-  // log all requests
-  page.on("request", (req) => {
-    console.log(">>", req.method(), req.url());
-  });
-
-  const login = new LoginPage(page);
-
-  await login.goto();
-  await login.loginAsStandardUser();
-});
-
-test("reuse saved state to open inventory", async ({ page }) => {
-  const login = new LoginPage(page);
-  await login.goto();
-  await login.loginAsStandardUser();
-  const inventory = new InventoryPage(page);
-  await inventory.smokePage();
+      if (user.shouldLogin) {
+        await login.expectInventoryLoaded();
+      } else {
+        await login.assertError(user.expectedError!);
+      }
+    });
+  }
 });
