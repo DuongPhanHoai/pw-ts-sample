@@ -2,3 +2,5 @@
 /.idea/
 /playwright-report/
 /test-results/
+/reports/
+.env

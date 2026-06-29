@@ -1,0 +1,75 @@
+name: Playwright CI with Local AI
+
+on:
+  push:
+    branches: [main, saucedemo]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      auto_fix_tests:
+        description: "AUTO_FIX_TESTS"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - dry-run
+          - "true"
+      test_env:
+        description: "TEST_ENV"
+        required: false
+        default: dev
+        type: choice
+        options:
+          - dev
+          - test
+          - stg
+          - prd
+
+jobs:
+  test-ui:
+    runs-on: self-hosted
+    env:
+      TEST_ENV: ${{ github.event.inputs.test_env || 'dev' }}
+      AUTO_FIX_TESTS: ${{ github.event.inputs.auto_fix_tests || vars.AUTO_FIX_TESTS || 'false' }}
+      LMSTUDIO_BASE_URL: ${{ vars.LMSTUDIO_BASE_URL || 'http://192.168.1.166:1234/v1' }}
+      LMSTUDIO_MODEL: ${{ vars.LMSTUDIO_MODEL || 'google/gemma-4-e4b' }}
+      LMSTUDIO_TIMEOUT_SECONDS: ${{ vars.LMSTUDIO_TIMEOUT_SECONDS || '60' }}
+      LMSTUDIO_API_KEY: ${{ secrets.LMSTUDIO_API_KEY || 'lm-studio' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Run Playwright tests
+        run: npm test
+
+      - name: Analyze test results with AI
+        if: always()
+        run: npm run analyze:results
+
+      - name: Apply AI fixes (auto-heal)
+        if: always()
+        run: npm run apply:ai-fixes
+
+      - name: Re-run failed tests after auto-heal
+        if: ${{ always() && env.AUTO_FIX_TESTS == 'true' }}
+        run: npx playwright test --last-failed
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: |
+            reports/

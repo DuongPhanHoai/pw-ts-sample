@@ -12,17 +12,18 @@ The suite covers login, inventory browsing, add-to-cart, the full checkout flow,
 pw-ts-sample/
 ├── .github/
 │   └── workflows/
-│       └── playwright.yml          # CI: install, run tests, upload HTML report
-├── .gitignore
+│       ├── playwright.yml          # CI: install, run tests, upload HTML report
+│       └── playwright-ai-ci.yml    # self-hosted: tests + local AI analysis
+├── .env.example                    # LMSTUDIO_* settings, AUTO_FIX_TESTS, TEST_ENV
 ├── package.json                    # npm scripts and devDependencies
 ├── package-lock.json
-├── playwright.config.ts            # testDir, retries, workers, reporter, baseURL
+├── playwright.config.ts            # testDir, retries, workers, reporters → reports/
 ├── quicknote.md                    # quick setup notes
 ├── storageState.json               # saved auth state (optional reuse)
 ├── playwright-report/              # generated HTML report (gitignored)
-│   └── index.html
-├── test-results/                   # generated run artifacts (gitignored)
-│   └── .last-run.json
+├── reports/                        # JSON/JUnit + AI outputs (gitignored)
+├── testing-standards/              # markdown + auto-heal-policy.json
+├── scripts/                        # analyze_results, apply_ai_fixes, local pipeline
 └── tests/
     ├── cart-and-checkout.spec.ts   # data-driven: products × customers
     ├── inventory.spec.ts           # data-driven: add-to-cart per product
@@ -241,9 +242,109 @@ TypeScript will fail compilation until all four spots are wired up — that's in
 
 ---
 
+## Local AI-assisted pipeline (no Neo4j)
+
+Standards live in **`testing-standards/`** (markdown + JSON). The local LLM reads Playwright results and optionally auto-heals allowed failures.
+
+### Layout
+
+```text
+pw-ts-sample/
+├── tests/                          # Playwright specs + page objects
+├── testing-standards/
+│   ├── ui-playwright-standards.md
+│   ├── evaluation-criteria.md
+│   └── auto-heal-policy.json       # which categories may auto-heal
+├── scripts/
+│   ├── analyze_results.ts          # → reports/ai-analysis.md, ai-fix-plan.json
+│   ├── apply_ai_fixes.ts           # controlled by AUTO_FIX_TESTS
+│   └── run-local-pipeline.ps1
+├── reports/                        # generated (gitignored)
+│   ├── results.json
+│   ├── junit-results.xml
+│   ├── ai-test-report.md           # main AI report: pass/fail + tests to fix
+│   ├── ai-test-report.json         # same data, machine-readable
+│   ├── ai-analysis.md              # detailed failure analysis (when failed)
+│   └── ai-fix-plan.json            # structured fix plan (when failed)
+└── .github/workflows/
+    ├── playwright.yml              # cloud smoke (ubuntu)
+    └── playwright-ai-ci.yml        # self-hosted + local AI
+```
+
+### Environment variables
+
+| Variable | Example | Purpose |
+|----------|---------|---------|
+| `LMSTUDIO_BASE_URL` | `http://192.168.1.166:1234/v1` | LM Studio OpenAI-compatible endpoint |
+| `LMSTUDIO_MODEL` | `google/gemma-4-e4b` | Model id shown in LM Studio server tab |
+| `LMSTUDIO_TIMEOUT_SECONDS` | `60` | Request timeout for AI analysis |
+| `LMSTUDIO_API_KEY` | `lm-studio` | Placeholder key (LM Studio ignores it) |
+| `TEST_ENV` | `dev` | Playwright data matrix |
+| `AUTO_FIX_TESTS` | `false` | `false` \| `dry-run` \| `true` |
+
+### Report outputs
+
+| File | When | Content |
+|------|------|---------|
+| `reports/ai-test-report.md` | Always | **Main report** — PASS/FAIL, summary table, tests to fix, passed list |
+| `reports/ai-test-report.json` | Always | Same data as JSON |
+| `reports/ai-analysis.md` | Failures only | Detailed AI failure analysis |
+| `reports/ai-fix-plan.json` | Failures only | Auto-heal fix plan |
+
+```powershell
+$env:TEST_ENV="dev"; npm test
+npm run analyze:results
+# Open reports/ai-test-report.md
+```
+
+### Setup
+
+```powershell
+copy .env.example .env
+npm install
+npx playwright install chromium
+```
+
+Ensure **LM Studio** is serving on the machine at `LMSTUDIO_BASE_URL` with model `google/gemma-4-e4b` loaded.
+
+### Run locally
+
+```powershell
+# tests only
+$env:TEST_ENV="dev"; npm test
+
+# full pipeline: test → analyze → optional fix
+npm run pipeline:local
+
+# auto-heal modes
+$env:AUTO_FIX_TESTS="false"     # analysis only (default)
+$env:AUTO_FIX_TESTS="dry-run"  # print what would change
+$env:AUTO_FIX_TESTS="true"      # apply fixes + re-run --last-failed
+```
+
+### CI on your laptop (self-hosted runner)
+
+1. GitHub repo → **Settings → Actions → Runners → New self-hosted runner**
+2. Install and start the runner on this machine
+3. Workflow **Playwright CI with Local AI** (`playwright-ai-ci.yml`) uses `runs-on: self-hosted`
+4. Set repo **Variables**: `LMSTUDIO_BASE_URL`, `LMSTUDIO_MODEL`, `LMSTUDIO_TIMEOUT_SECONDS`; optional `AUTO_FIX_TESTS`
+5. Keep LM Studio running at `LMSTUDIO_BASE_URL` during the job
+
+### Auto-heal control
+
+| Control | Purpose |
+|---------|---------|
+| `testing-standards/auto-heal-policy.json` | Which failure categories allow auto-heal |
+| `AUTO_FIX_TESTS` | `false` \| `dry-run` \| `true` |
+
+Categories with `autoHeal: true` by default: `locators-broken`, `timing-flaky`.  
+App/backend/data issues are never auto-fixed.
+
+---
+
 ## Continuous integration
 
-`.github/workflows/playwright.yml` runs on every `push` and `pull_request`:
+`.github/workflows/playwright.yml` runs on every `push` and `pull_request` (GitHub-hosted):
 
 1. Checkout
 2. Setup Node 20
@@ -251,6 +352,8 @@ TypeScript will fail compilation until all four spots are wired up — that's in
 4. `npx playwright install --with-deps`
 5. `npx playwright test`
 6. Upload the `playwright-report/` directory as an artifact (retained 7 days)
+
+For **local LLM analysis**, use `playwright-ai-ci.yml` on a **self-hosted runner** (see above).
 
 ---
 

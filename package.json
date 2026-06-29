@@ -1,19 +1,27 @@
 {
   "name": "pwstudy",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Playwright TS + local LLM analysis and optional auto-heal",
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
-  "devDependencies": {
-    "@playwright/test": "^1.59.1"
-  },
   "scripts": {
     "test": "npx playwright test",
     "test:headed": "npx playwright test --headed",
     "test:debug": "npx playwright test --debug",
-    "show-report": "npx playwright show-report"
+    "show-report": "npx playwright show-report",
+    "analyze:results": "tsx scripts/analyze_results.ts",
+    "apply:ai-fixes": "tsx scripts/apply_ai_fixes.ts",
+    "pipeline:local": "powershell -ExecutionPolicy Bypass -File ./scripts/run-local-pipeline.ps1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@types/node": "^22.13.0",
+    "dotenv": "^16.4.7",
+    "openai": "^4.86.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "zod": "^3.24.2"
   }
 }

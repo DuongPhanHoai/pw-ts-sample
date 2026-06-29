@@ -1,0 +1,28 @@
+{
+  "categories": {
+    "locators-broken": {
+      "description": "Selectors or element structure changed, same user behavior",
+      "autoHeal": true,
+      "allowedPaths": ["tests/pages", "tests"]
+    },
+    "timing-flaky": {
+      "description": "Flakiness caused by timeouts, slow loading, or waits",
+      "autoHeal": true,
+      "allowedPaths": ["tests/pages", "tests"]
+    },
+    "backend-issue": {
+      "description": "Real API/backend issue or incorrect data",
+      "autoHeal": false
+    },
+    "business-logic-change": {
+      "description": "Requirement or visible behavior changed intentionally",
+      "autoHeal": false
+    },
+    "test-data-issue": {
+      "description": "Bad or missing test data / environment configuration",
+      "autoHeal": false
+    }
+  },
+  "maxFilesPerRun": 3,
+  "minConfidence": 0.75
+}
