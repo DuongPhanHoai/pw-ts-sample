@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import { chatText } from "./lib/llm";
+import { logLlmExchange } from "./lib/llm-log";
 import { paths, projectRoot } from "./lib/paths";
 
 type AutoFixMode = "false" | "dry-run" | "true";
@@ -128,22 +129,31 @@ async function main(): Promise<void> {
     if (touched.has(relativePath)) continue;
 
     const original = fs.readFileSync(fullPath, "utf8");
-    const updated = await chatText(
-      "You are an expert Playwright + TypeScript test engineer. Return ONLY the full updated file content. No markdown fences.",
-      JSON.stringify(
-        {
-          task: "Fix the test or page object with minimal changes.",
-          testName: item.testName,
-          category: item.category,
-          proposedChangeSummary: item.proposedChangeSummary,
-          hint,
-          filePath: relativePath,
-          currentFileContent: original,
-        },
-        null,
-        2,
-      ),
+    const system =
+      "You are an expert Playwright + TypeScript test engineer. Return ONLY the full updated file content. No markdown fences.";
+    const user = JSON.stringify(
+      {
+        task: "Fix the test or page object with minimal changes.",
+        testName: item.testName,
+        category: item.category,
+        proposedChangeSummary: item.proposedChangeSummary,
+        hint,
+        filePath: relativePath,
+        currentFileContent: original,
+      },
+      null,
+      2,
     );
+    const result = await chatText(system, user);
+    logLlmExchange({
+      label: `apply-fix-${item.testId.slice(0, 8)}`,
+      system,
+      user,
+      response: result.content,
+      usage: result.usage,
+      meta: { type: "apply-fix", testName: item.testName, filePath: relativePath },
+    });
+    const updated = result.content;
 
     if (!updated || updated.trim() === original.trim()) {
       console.warn(`No effective change for ${relativePath}`);

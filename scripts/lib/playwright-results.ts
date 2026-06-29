@@ -13,9 +13,23 @@ export interface TestCase {
   durationMs?: number;
 }
 
+export interface FailureLocation {
+  file: string;
+  line: number;
+  column?: number;
+}
+
 export interface FailedTest extends TestCase {
   error: string;
   status: "failed" | "timedOut";
+  /** Top-level Playwright message (often just "Test timeout exceeded"). */
+  errorSummary?: string;
+  /** Where the actionable failure occurred (page object / spec line). */
+  failureLocation?: FailureLocation;
+  /** Playwright call log excerpt, e.g. "waiting for locator('#pwd')". */
+  callLog?: string;
+  /** Contents of test-results/.../error-context.md when present. */
+  errorContextMd?: string;
 }
 
 interface PlaywrightJsonReport {
@@ -35,6 +49,29 @@ interface PlaywrightSuite {
   suites?: PlaywrightSuite[];
 }
 
+interface PlaywrightErrorEntry {
+  message?: string;
+  location?: {
+    file?: string;
+    line?: number;
+    column?: number;
+  };
+}
+
+interface PlaywrightAttachment {
+  name?: string;
+  contentType?: string;
+  path?: string;
+}
+
+interface PlaywrightTestResult {
+  status?: string;
+  duration?: number;
+  error?: { message?: string; stack?: string };
+  errors?: PlaywrightErrorEntry[];
+  attachments?: PlaywrightAttachment[];
+}
+
 interface PlaywrightSpec {
   id?: string;
   title?: string;
@@ -42,11 +79,7 @@ interface PlaywrightSpec {
   line?: number;
   tags?: string[];
   tests?: Array<{
-    results?: Array<{
-      status?: string;
-      duration?: number;
-      error?: { message?: string };
-    }>;
+    results?: PlaywrightTestResult[];
   }>;
 }
 
@@ -69,6 +102,94 @@ function mapStatus(raw?: string): TestStatus {
   }
 }
 
+/** Remove ANSI color / style codes from Playwright JSON output. */
+export function stripAnsi(text: string): string {
+  return text.replace(/\u001b\[[0-9;]*m/g, "");
+}
+
+/** Extract "Call log:" section from a Playwright error message. */
+export function extractCallLog(message: string): string | undefined {
+  const cleaned = stripAnsi(message);
+  const match = cleaned.match(/Call log:\s*([\s\S]*?)(?:\n\n|$)/);
+  if (!match) return undefined;
+  const log = match[1]?.trim();
+  return log || undefined;
+}
+
+function readErrorContextAttachment(attachments?: PlaywrightAttachment[]): string | undefined {
+  const attachment = attachments?.find((a) => a.name === "error-context" && a.path);
+  if (!attachment?.path || !fs.existsSync(attachment.path)) return undefined;
+  try {
+    return fs.readFileSync(attachment.path, "utf8");
+  } catch {
+    return undefined;
+  }
+}
+
+function pickActionableError(errors?: PlaywrightErrorEntry[]): PlaywrightErrorEntry | undefined {
+  if (!errors?.length) return undefined;
+  return (
+    errors.find((e) => e.location?.file && e.message && !isGenericTimeoutOnly(e.message)) ??
+    errors.find((e) => e.location?.file) ??
+    errors.find((e) => e.message && !isGenericTimeoutOnly(e.message)) ??
+    errors[errors.length - 1]
+  );
+}
+
+function isGenericTimeoutOnly(message: string): boolean {
+  const cleaned = stripAnsi(message).trim();
+  return /^Test timeout of \d+ms exceeded\.?$/.test(cleaned);
+}
+
+function buildEnrichedError(result: PlaywrightTestResult): {
+  error: string;
+  errorSummary?: string;
+  failureLocation?: FailureLocation;
+  callLog?: string;
+  errorContextMd?: string;
+} {
+  const errorSummary = result.error?.message
+    ? stripAnsi(result.error.message).trim()
+    : undefined;
+
+  const actionable = pickActionableError(result.errors);
+  const actionableMessage = actionable?.message
+    ? stripAnsi(actionable.message).trim()
+    : undefined;
+  const callLog = actionableMessage ? extractCallLog(actionableMessage) : undefined;
+
+  const failureLocation =
+    actionable?.location?.file && actionable.location.line
+      ? {
+          file: actionable.location.file,
+          line: actionable.location.line,
+          column: actionable.location.column,
+        }
+      : undefined;
+
+  const errorContextMd = readErrorContextAttachment(result.attachments);
+
+  const parts: string[] = [];
+  if (errorSummary) parts.push(`Summary: ${errorSummary}`);
+  if (actionableMessage && actionableMessage !== errorSummary) {
+    parts.push(`Detail:\n${actionableMessage}`);
+  }
+  if (failureLocation) {
+    parts.push(
+      `Failure at: ${failureLocation.file}:${failureLocation.line}${failureLocation.column ? `:${failureLocation.column}` : ""}`,
+    );
+  }
+  if (callLog) parts.push(`Call log:\n${callLog}`);
+  if (errorContextMd) parts.push(`Error context (error-context.md):\n${errorContextMd}`);
+
+  const error =
+    parts.length > 0
+      ? parts.join("\n\n")
+      : (errorSummary ?? actionableMessage ?? "Unknown test failure");
+
+  return { error, errorSummary, failureLocation, callLog, errorContextMd };
+}
+
 function collectTests(
   suite: PlaywrightSuite,
   parentTitle: string,
@@ -82,15 +203,29 @@ function collectTests(
       const result = test.results?.[test.results.length - 1];
       if (!result?.status) continue;
 
+      const status = mapStatus(result.status);
+      const enriched =
+        status === "failed" || status === "timedOut"
+          ? buildEnrichedError(result)
+          : { error: undefined as string | undefined };
+
       out.push({
         testId: spec.id ?? testName,
         testName,
         file: spec.file ?? suite.file,
         line: spec.line,
-        status: mapStatus(result.status),
-        error: result.error?.message,
+        status,
+        error: enriched.error,
         tags: spec.tags ?? [],
         durationMs: result.duration,
+        ...(status === "failed" || status === "timedOut"
+          ? {
+              errorSummary: enriched.errorSummary,
+              failureLocation: enriched.failureLocation,
+              callLog: enriched.callLog,
+              errorContextMd: enriched.errorContextMd,
+            }
+          : {}),
       });
     }
   }
@@ -120,7 +255,8 @@ export function loadTestRun(reportPath: string): {
   }
 
   const failures = tests.filter(
-    (t): t is FailedTest => t.status === "failed" || t.status === "timedOut",
+    (t): t is FailedTest =>
+      (t.status === "failed" || t.status === "timedOut") && typeof t.error === "string",
   );
 
   return {

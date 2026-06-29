@@ -4,6 +4,9 @@ A sample Playwright + TypeScript end-to-end test suite that exercises [https://w
 
 The suite covers login, inventory browsing, add-to-cart, the full checkout flow, and a simple API-mocking example. Login, add-to-cart, and checkout specs are parameterized over typed data fixtures, so adding a new user, product, or customer profile is a one-line change. It runs on Chromium by default and uploads an HTML report from CI.
 
+> **Run locally (tests + AI report):** see **[docs/LOCAL-RUN.md](docs/LOCAL-RUN.md)**  
+> Quick start: `npm run pipeline:local` → open `reports/ai-test-report.md`
+
 ---
 
 ## File map
@@ -24,7 +27,8 @@ pw-ts-sample/
 ├── reports/                        # JSON/JUnit + AI outputs (gitignored)
 ├── testing-standards/              # markdown + auto-heal-policy.json
 ├── docs/
-│   └── SELF-HOSTED-RUNNER.md       # GitHub self-hosted runner (Windows)
+│   ├── LOCAL-RUN.md                # ← run tests + AI report on your laptop
+│   └── SELF-HOSTED-RUNNER.md       # GitHub self-hosted runner (optional CI)
 ├── scripts/                        # analyze_results, apply_ai_fixes, local pipeline
 │   └── install-self-hosted-runner.ps1
 └── tests/
@@ -247,9 +251,18 @@ TypeScript will fail compilation until all four spots are wired up — that's in
 
 ## Local AI-assisted pipeline (no Neo4j)
 
-Standards live in **`testing-standards/`** (markdown + JSON). The local LLM reads Playwright results and optionally auto-heals allowed failures.
+> **Full guide:** **[docs/LOCAL-RUN.md](docs/LOCAL-RUN.md)**
 
-### Layout
+```powershell
+cd D:\Testing\pw-ts-sample
+copy .env.example .env
+npm install
+npx playwright install chromium
+
+# LM Studio on, then:
+npm run pipeline:local
+start reports\ai-test-report.md
+```
 
 ```text
 pw-ts-sample/
