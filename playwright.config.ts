@@ -18,11 +18,11 @@ if (!process.env.__PW_BANNER_PRINTED) {
 export default defineConfig({
   testDir: "tests",
   timeout: 30_000,
-  retries: 1, // retry failing tests once
-  workers: 4, // run up to 4 tests in parallel (tune to your machine/CI)
+  retries: 1,
+  workers: process.env.CI ? 2 : 4,
   reporter: [
     ["list"],
-    ["html", { open: "never" }],
+    ["html", { open: "never", outputFolder: "playwright-report" }],
     ["junit", { outputFile: "reports/junit-results.xml" }],
     ["json", { outputFile: "reports/results.json" }],
   ],
@@ -30,7 +30,8 @@ export default defineConfig({
     headless: true,
     baseURL: envCfg.baseURL,
     screenshot: "only-on-failure",
-    trace: "retain-on-failure", // collects traces on failures
+    // Traces bloat CI artifacts and can hang upload-artifact; keep locally only.
+    trace: process.env.CI ? "off" : "retain-on-failure",
   },
   projects: [
     { name: "chromium", use: { browserName: "chromium" } },

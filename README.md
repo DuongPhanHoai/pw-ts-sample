@@ -23,7 +23,10 @@ pw-ts-sample/
 ├── playwright-report/              # generated HTML report (gitignored)
 ├── reports/                        # JSON/JUnit + AI outputs (gitignored)
 ├── testing-standards/              # markdown + auto-heal-policy.json
+├── docs/
+│   └── SELF-HOSTED-RUNNER.md       # GitHub self-hosted runner (Windows)
 ├── scripts/                        # analyze_results, apply_ai_fixes, local pipeline
+│   └── install-self-hosted-runner.ps1
 └── tests/
     ├── cart-and-checkout.spec.ts   # data-driven: products × customers
     ├── inventory.spec.ts           # data-driven: add-to-cart per product
@@ -324,11 +327,31 @@ $env:AUTO_FIX_TESTS="true"      # apply fixes + re-run --last-failed
 
 ### CI on your laptop (self-hosted runner)
 
-1. GitHub repo → **Settings → Actions → Runners → New self-hosted runner**
-2. Install and start the runner on this machine
-3. Workflow **Playwright CI with Local AI** (`playwright-ai-ci.yml`) uses `runs-on: self-hosted`
-4. Set repo **Variables**: `LMSTUDIO_BASE_URL`, `LMSTUDIO_MODEL`, `LMSTUDIO_TIMEOUT_SECONDS`; optional `AUTO_FIX_TESTS`
-5. Keep LM Studio running at `LMSTUDIO_BASE_URL` during the job
+Full guide: **[docs/SELF-HOSTED-RUNNER.md](docs/SELF-HOSTED-RUNNER.md)**
+
+**`.\run.cmd` = wait for jobs. It does not create reports until a workflow runs.**
+
+Quick setup:
+
+1. **Start runner** (leave terminal open):
+
+   ```powershell
+   cd C:\actions-runner\pw-ts-sample
+   .\run.cmd
+   ```
+
+2. **Trigger the AI workflow** (runner alone is not enough):  
+   **Actions** → **Playwright CI with Local AI** → **Run workflow**
+
+3. **Download reports**: Actions → that run → **Artifacts** → `reports` → open `ai-test-report.md`
+
+For reports in your repo folder without GitHub, run locally:
+
+```powershell
+cd D:\Testing\pw-ts-sample
+npm run pipeline:local
+# → D:\Testing\pw-ts-sample\reports\ai-test-report.md
+```
 
 ### Auto-heal control
 
@@ -353,7 +376,7 @@ App/backend/data issues are never auto-fixed.
 5. `npx playwright test`
 6. Upload the `playwright-report/` directory as an artifact (retained 7 days)
 
-For **local LLM analysis**, use `playwright-ai-ci.yml` on a **self-hosted runner** (see above).
+For **local LLM analysis**, use `playwright-ai-ci.yml` on a **self-hosted runner** — see **[docs/SELF-HOSTED-RUNNER.md](docs/SELF-HOSTED-RUNNER.md)**.
 
 ---
 

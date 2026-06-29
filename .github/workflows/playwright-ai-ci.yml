@@ -2,7 +2,7 @@ name: Playwright CI with Local AI
 
 on:
   push:
-    branches: [main, saucedemo]
+    branches: [main, saucedemo, saucedemo-ai]
   pull_request:
   workflow_dispatch:
     inputs:
@@ -28,7 +28,7 @@ on:
 
 jobs:
   test-ui:
-    runs-on: self-hosted
+    runs-on: [self-hosted, Windows, X64]
     env:
       TEST_ENV: ${{ github.event.inputs.test_env || 'dev' }}
       AUTO_FIX_TESTS: ${{ github.event.inputs.auto_fix_tests || vars.AUTO_FIX_TESTS || 'false' }}
@@ -73,3 +73,6 @@ jobs:
           name: reports
           path: |
             reports/
+            playwright-report/
+          if-no-files-found: warn
+          retention-days: 14
