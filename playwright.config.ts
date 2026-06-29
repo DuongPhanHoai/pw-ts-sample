@@ -20,7 +20,7 @@ export default defineConfig({
   timeout: 30_000,
   retries: 1, // retry failing tests once
   workers: 4, // run up to 4 tests in parallel (tune to your machine/CI)
-  reporter: [["list"], ["html", { open: "never" }]],
+  reporter: [["list"], ["html", { open: "never" }], ["json", { outputFile: "test-results/results.json" }]],
   use: {
     headless: true,
     baseURL: envCfg.baseURL,
