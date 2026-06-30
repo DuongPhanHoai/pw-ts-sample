@@ -1,5 +1,6 @@
 import { findDomSelectorReplacement } from "./page-evidence";
 import type { FailedTest } from "./playwright-results";
+import { formatClickSnippet } from "./selector-quotes";
 
 export function extractWaitingLocatorSelector(failure: FailedTest): string | undefined {
   const fromCallLog = failure.callLog?.match(/waiting for locator\('([^']+)'\)/i)?.[1];
@@ -66,15 +67,7 @@ function findAlternateSelectors(
   return [...selectors];
 }
 
-function buildHintSnippet(_badSelector: string, suggested: string): string {
-  if (suggested.startsWith("[") && suggested.includes('"')) {
-    return `await this.page.click('${suggested}');`;
-  }
-  if (suggested.startsWith("#") || suggested.startsWith(".") || suggested.startsWith("[")) {
-    return `await this.page.click("${suggested}");`;
-  }
-  return suggested;
-}
+import { formatClickSnippet } from "./selector-quotes";
 
 export function classifyFailure(failure: FailedTest): FailureClassification | undefined {
   const badSelector = extractWaitingLocatorSelector(failure);
@@ -138,7 +131,10 @@ export function classifyFailure(failure: FailedTest): FailureClassification | un
       {
         filePath,
         reason: `Call log: waiting for locator('${badSelector}')`,
-        suggestedSelectorOrChange: buildHintSnippet(badSelector, suggested),
+        suggestedSelectorOrChange: formatClickSnippet(
+          suggested,
+          failure.errorContextMd,
+        ),
       },
     ],
   };

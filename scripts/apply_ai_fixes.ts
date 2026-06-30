@@ -4,6 +4,11 @@ import path from "node:path";
 import { z } from "zod";
 import { chatText } from "./lib/llm";
 import { classifyFailure } from "./lib/failure-classifier";
+import {
+  extractSelectorFromActionLine,
+  replaceSelectorInSource,
+  SELECTOR_QUOTE_RULES,
+} from "./lib/selector-quotes";
 import { loadTestRun, type FailedTest } from "./lib/playwright-results";
 import { paths, projectRoot } from "./lib/paths";
 
@@ -96,25 +101,19 @@ function isAllowedPath(relativePath: string, allowedPrefixes?: string[]): boolea
 }
 
 function extractSelectorFromHint(text: string): string | undefined {
-  const clickBracket = text.match(/\.click\(\s*(\[[^\]]+\])\s*\)/)?.[1];
-  if (clickBracket) return clickBracket.replace(/\\'/g, "'");
+  const lineMatch = text.match(/\.(?:click|fill|locator)\([^)]+\)/);
+  if (lineMatch) {
+    const parsed = extractSelectorFromActionLine(lineMatch[0]);
+    if (parsed) return parsed.selector;
+  }
 
-  const clickSingle = text.match(/\.click\(\s*'([^']+)'\s*\)/)?.[1];
-  if (clickSingle) return clickSingle;
+  const clickSingle = text.match(/\.click\(\s*'((?:\\.|[^'])*)'\s*\)/)?.[1];
+  if (clickSingle) return clickSingle.replace(/\\(.)/g, "$1");
 
-  const clickDouble = text.match(/\.click\(\s*"([^"]+)"\s*\)/)?.[1];
-  if (clickDouble) return clickDouble;
-
-  const fillSingle = text.match(/\.fill\(\s*'([^']+)'\s*,/)?.[1];
-  if (fillSingle) return fillSingle;
-
-  const fillDouble = text.match(/\.fill\(\s*"([^"]+)"\s*,/)?.[1];
-  if (fillDouble) return fillDouble;
+  const clickDouble = text.match(/\.click\(\s*"((?:\\.|[^"])*)"\s*\)/)?.[1];
+  if (clickDouble) return clickDouble.replace(/\\(.)/g, "$1");
 
   if (/toHaveCount\s*\(/.test(text)) return undefined;
-
-  const locatorBracket = text.match(/locator\(\s*(\[[^\]]+\])\s*\)/)?.[1];
-  if (locatorBracket) return locatorBracket.replace(/\\'/g, "'");
 
   return text.match(/locator\(\s*["']([^"']+)["']\s*\)/)?.[1];
 }
@@ -171,18 +170,11 @@ function extractOldSelector(reason: string, summary: string): string | undefined
   return fromSummary;
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 function getSelectorOnLine(content: string, line: number): string | undefined {
   const lines = content.split(/\r?\n/);
   const idx = line - 1;
   if (idx < 0 || idx >= lines.length) return undefined;
-  const match = lines[idx].match(
-    /\.(?:click|fill|locator|dblclick|press)\(\s*(["'`])([^"'`]+)\1/,
-  );
-  return match?.[2];
+  return extractSelectorFromActionLine(lines[idx])?.selector;
 }
 
 function selectorsEquivalent(a?: string, b?: string): boolean {
@@ -211,49 +203,6 @@ function isUnsafeReplacement(
     if (/expect\(|toBeVisible|toHaveText|toHaveCount/.test(line)) return true;
   }
   return false;
-}
-
-function replaceSelectorInSource(
-  content: string,
-  oldSelector: string,
-  newSelector: string,
-  failureLine?: number,
-): string | null {
-  if (!oldSelector || !newSelector || oldSelector === newSelector) return null;
-
-  if (failureLine !== undefined && failureLine > 0) {
-    const lines = content.split(/\r?\n/);
-    const idx = failureLine - 1;
-    if (idx >= 0 && idx < lines.length) {
-      const line = lines[idx];
-      const actionMatch = line.match(
-        /(\.(?:click|fill|locator|dblclick|press)\(\s*)(["'`])([^"'`]+)\2/,
-      );
-      if (actionMatch && actionMatch[3] !== newSelector) {
-        const updatedLine = line.replace(
-          new RegExp(
-            `(\\.(?:click|fill|locator|dblclick|press)\\(\\s*)${escapeRegExp(actionMatch[2])}${escapeRegExp(actionMatch[3])}${escapeRegExp(actionMatch[2])}`,
-          ),
-          `$1${actionMatch[2]}${newSelector}${actionMatch[2]}`,
-        );
-        if (updatedLine !== line) {
-          lines[idx] = updatedLine;
-          return lines.join("\n");
-        }
-      }
-    }
-  }
-
-  let updated = content;
-  for (const quote of ['"', "'", "`"] as const) {
-    const from = `${quote}${oldSelector}${quote}`;
-    const to = `${quote}${newSelector}${quote}`;
-    if (updated.includes(from)) {
-      return updated.replace(from, to);
-    }
-  }
-
-  return null;
 }
 
 type PlanItem = z.infer<typeof FixPlanSchema>["plan"][number];
@@ -625,6 +574,7 @@ async function main(): Promise<void> {
             "Replace ONLY occurrences of brokenSelector with replacementSelector.",
             "Do NOT substitute a different element from later steps in the same method.",
             "Keep imports, method order, and all other selectors unchanged.",
+            SELECTOR_QUOTE_RULES,
           ],
           currentFileContent: original,
         },
