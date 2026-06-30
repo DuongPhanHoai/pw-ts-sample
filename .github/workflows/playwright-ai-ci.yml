@@ -34,7 +34,6 @@ jobs:
       pull-requests: write
     env:
       TEST_ENV: ${{ github.event.inputs.test_env || 'dev' }}
-      AUTO_FIX_TESTS: ${{ github.event.inputs.auto_fix_tests || vars.AUTO_FIX_TESTS || 'false' }}
       LMSTUDIO_BASE_URL: ${{ vars.LMSTUDIO_BASE_URL || 'http://192.168.1.166:1234/v1' }}
       LMSTUDIO_MODEL: ${{ vars.LMSTUDIO_MODEL || 'google/gemma-4-e4b' }}
       LMSTUDIO_TIMEOUT_SECONDS: ${{ vars.LMSTUDIO_TIMEOUT_SECONDS || '60' }}
