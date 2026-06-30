@@ -3,5 +3,4 @@
 /playwright-report/
 /test-results/
 /reports/
-.env
 scripts/**/*.js
