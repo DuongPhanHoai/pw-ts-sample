@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { logLlmExchange } from "./llm-log";
 import type { TokenUsageFromApi } from "./token-estimate";
 
 function getTimeoutMs(): number {
@@ -50,6 +51,19 @@ export interface ChatResult {
   usage?: TokenUsageFromApi;
 }
 
+export interface ChatOptions {
+  /** File label under reports/llm-prompts/ (auto-generated if omitted). */
+  label?: string;
+  meta?: Record<string, unknown>;
+}
+
+let autoCallIndex = 0;
+
+function nextAutoLabel(): string {
+  autoCallIndex += 1;
+  return `llm-call-${autoCallIndex}`;
+}
+
 function readUsage(response: OpenAI.Chat.Completions.ChatCompletion): TokenUsageFromApi | undefined {
   const u = response.usage;
   if (!u) return undefined;
@@ -60,11 +74,16 @@ function readUsage(response: OpenAI.Chat.Completions.ChatCompletion): TokenUsage
   return { promptTokens, completionTokens, totalTokens };
 }
 
-export async function chatJson(system: string, user: string): Promise<ChatResult> {
-  const result = await chatText(
-    `${system}\n\nReturn ONLY valid JSON. No markdown fences, no commentary.`,
-    user,
-  );
+export async function chatJson(
+  system: string,
+  user: string,
+  options?: ChatOptions,
+): Promise<ChatResult> {
+  const jsonSystem = `${system}\n\nReturn ONLY valid JSON. No markdown fences, no commentary.`;
+  const result = await chatText(jsonSystem, user, {
+    ...options,
+    meta: { ...options?.meta, responseFormat: "json" },
+  });
   const parsed = parseJsonFromLlm(result.content);
   return {
     content: JSON.stringify(parsed),
@@ -72,7 +91,11 @@ export async function chatJson(system: string, user: string): Promise<ChatResult
   };
 }
 
-export async function chatText(system: string, user: string): Promise<ChatResult> {
+export async function chatText(
+  system: string,
+  user: string,
+  options?: ChatOptions,
+): Promise<ChatResult> {
   const client = createLlmClient();
   const response = await client.chat.completions.create({
     model: getModel(),
@@ -83,8 +106,20 @@ export async function chatText(system: string, user: string): Promise<ChatResult
     ],
   });
 
-  return {
-    content: response.choices[0]?.message?.content ?? "",
-    usage: readUsage(response),
-  };
+  const content = response.choices[0]?.message?.content ?? "";
+  const usage = readUsage(response);
+
+  logLlmExchange({
+    label: options?.label ?? nextAutoLabel(),
+    system,
+    user,
+    response: content,
+    usage,
+    meta: {
+      model: getModel(),
+      ...options?.meta,
+    },
+  });
+
+  return { content, usage };
 }

@@ -24,6 +24,9 @@ npm run pipeline:local
 | Playwright JSON | `reports/results.json` |
 | HTML report | `playwright-report/index.html` |
 | Fix plan (if failures) | `reports/ai-fix-plan.json` |
+| Triage groups (step 1) | `reports/ai-triage.json` |
+
+See **[AI-POST-AUTO-HEAL.md](AI-POST-AUTO-HEAL.md)** for the full post-failure analyze + auto-heal design.
 
 ---
 

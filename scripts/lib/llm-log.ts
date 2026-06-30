@@ -3,9 +3,27 @@ import path from "node:path";
 import type { TokenUsageFromApi } from "./token-estimate";
 import { paths } from "./paths";
 
-export function shouldLogLlmPrompts(): boolean {
+let exchangeCounter = 0;
+
+/** Reset per-script-run counter (optional; e.g. before a new analyze pass). */
+export function resetLlmExchangeCounter(): void {
+  exchangeCounter = 0;
+}
+
+export function shouldLogLlmExchanges(): boolean {
+  const v = (process.env.LMSTUDIO_LOG_LLM ?? "true").toLowerCase();
+  return v !== "0" && v !== "false" && v !== "no";
+}
+
+/** Verbose console dump of full prompts/responses. */
+export function shouldLogLlmToConsole(): boolean {
   const v = (process.env.LMSTUDIO_LOG_PROMPTS ?? "").toLowerCase();
   return v === "1" || v === "true" || v === "yes";
+}
+
+/** @deprecated use shouldLogLlmToConsole */
+export function shouldLogLlmPrompts(): boolean {
+  return shouldLogLlmToConsole();
 }
 
 export function getFailureLimit(): number | undefined {
@@ -20,9 +38,10 @@ function safeLogFileName(label: string): string {
   return label.replace(/[^\w.-]+/g, "_").slice(0, 80);
 }
 
-export function getLlmLogFilePath(label: string): string {
+export function getLlmLogFilePath(label: string, sequence: number): string {
   const dir = path.join(path.dirname(paths.resultsJson), "llm-prompts");
-  return path.join(dir, `${safeLogFileName(label)}.txt`);
+  const seq = String(sequence).padStart(3, "0");
+  return path.join(dir, `${seq}_${safeLogFileName(label)}.txt`);
 }
 
 export interface LlmExchangeLog {
@@ -34,14 +53,15 @@ export interface LlmExchangeLog {
   usage?: TokenUsageFromApi;
 }
 
-/** Log full prompt + LLM response to reports/llm-prompts/ when LMSTUDIO_LOG_PROMPTS=true. */
+/** Log full LLM request + response to reports/llm-prompts/ (on by default). */
 export function logLlmExchange(input: LlmExchangeLog): string | undefined {
-  if (!shouldLogLlmPrompts()) return undefined;
+  if (!shouldLogLlmExchanges()) return undefined;
 
+  exchangeCounter += 1;
   const dir = path.join(path.dirname(paths.resultsJson), "llm-prompts");
   fs.mkdirSync(dir, { recursive: true });
 
-  const filePath = getLlmLogFilePath(input.label);
+  const filePath = getLlmLogFilePath(input.label, exchangeCounter);
   const metaLines = input.meta
     ? Object.entries(input.meta)
         .map(([k, v]) => `${k}: ${v}`)
@@ -61,26 +81,30 @@ export function logLlmExchange(input: LlmExchangeLog): string | undefined {
   const body = `${header}\n\n--- SYSTEM ---\n${input.system}\n\n--- USER ---\n${input.user}\n\n--- ASSISTANT ---\n${input.response}\n`;
   fs.writeFileSync(filePath, body, "utf8");
 
-  console.log("\n" + "=".repeat(72));
-  console.log(`LLM EXCHANGE: ${input.label}`);
-  if (input.meta) console.log(input.meta);
-  if (input.usage) console.log(input.usage);
-  console.log("-".repeat(72));
-  console.log("--- SYSTEM (first 500 chars) ---");
-  console.log(
-    input.system.slice(0, 500) + (input.system.length > 500 ? "\n… [truncated in console]" : ""),
-  );
-  console.log("-".repeat(72));
-  console.log("--- USER (full payload sent to model) ---");
-  console.log(input.user);
-  console.log("-".repeat(72));
-  console.log("--- ASSISTANT (full response) ---");
-  console.log(
-    input.response.slice(0, 2000) +
-      (input.response.length > 2000 ? "\n… [truncated in console — see file for full response]" : ""),
-  );
-  console.log("-".repeat(72));
-  console.log(`Saved full exchange: ${filePath}\n`);
+  console.log(`LLM exchange logged: ${filePath}`);
+
+  if (shouldLogLlmToConsole()) {
+    console.log("\n" + "=".repeat(72));
+    console.log(`LLM EXCHANGE: ${input.label}`);
+    if (input.meta) console.log(input.meta);
+    if (input.usage) console.log(input.usage);
+    console.log("-".repeat(72));
+    console.log("--- SYSTEM (first 500 chars) ---");
+    console.log(
+      input.system.slice(0, 500) + (input.system.length > 500 ? "\n… [truncated in console]" : ""),
+    );
+    console.log("-".repeat(72));
+    console.log("--- USER (full payload sent to model) ---");
+    console.log(input.user);
+    console.log("-".repeat(72));
+    console.log("--- ASSISTANT (full response) ---");
+    console.log(
+      input.response.slice(0, 2000) +
+        (input.response.length > 2000 ? "\n… [truncated in console — see file for full response]" : ""),
+    );
+    console.log("-".repeat(72));
+    console.log(`Saved full exchange: ${filePath}\n`);
+  }
 
   return filePath;
 }

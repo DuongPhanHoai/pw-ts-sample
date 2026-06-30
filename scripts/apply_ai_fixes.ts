@@ -3,7 +3,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import { chatText } from "./lib/llm";
-import { logLlmExchange } from "./lib/llm-log";
 import { paths, projectRoot } from "./lib/paths";
 
 type AutoFixMode = "false" | "dry-run" | "true";
@@ -144,13 +143,8 @@ async function main(): Promise<void> {
       null,
       2,
     );
-    const result = await chatText(system, user);
-    logLlmExchange({
+    const result = await chatText(system, user, {
       label: `apply-fix-${item.testId.slice(0, 8)}`,
-      system,
-      user,
-      response: result.content,
-      usage: result.usage,
       meta: { type: "apply-fix", testName: item.testName, filePath: relativePath },
     });
     const updated = result.content;

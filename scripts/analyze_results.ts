@@ -18,7 +18,7 @@ import {
   type StandardsContext,
 } from "./lib/llm-batch";
 import { applyDeterministicClassification, classifyFailure } from "./lib/failure-classifier";
-import { getFailureLimit, logLlmExchange, shouldLogLlmPrompts } from "./lib/llm-log";
+import { getFailureLimit, shouldLogLlmToConsole } from "./lib/llm-log";
 import { loadTestRun, type FailedTest } from "./lib/playwright-results";
 import { paths, projectRoot } from "./lib/paths";
 import {
@@ -108,8 +108,8 @@ async function main(): Promise<void> {
   console.log(
     `Results: ${run.passed} passed, ${run.failed} failed, ${run.skipped} skipped`,
   );
-  if (shouldLogLlmPrompts()) {
-    console.log("LMSTUDIO_LOG_PROMPTS=true — full payloads logged to reports/llm-prompts/");
+  if (shouldLogLlmToConsole()) {
+    console.log("LMSTUDIO_LOG_PROMPTS=true — full payloads also printed to console");
   }
 
   let fixPlan: FixPlanItem[] = [];
@@ -123,17 +123,12 @@ async function main(): Promise<void> {
 Environment: TEST_ENV=${testEnv}
 Passed: ${run.passed}, Failed: 0, Skipped: ${run.skipped}
 Confirm success and note no fixes are needed.`;
-    const result = await chatText(system, user).catch(() => ({
+    const result = await chatText(system, user, {
+      label: "all-passed-summary",
+      meta: { type: "all-passed-summary" },
+    }).catch(() => ({
       content: "All tests passed. No failures detected. No fixes required.",
     }));
-    logLlmExchange({
-      label: "all-passed-summary",
-      system,
-      user,
-      response: result.content,
-      usage: "usage" in result ? result.usage : undefined,
-      meta: { type: "all-passed-summary" },
-    });
     aiSummary = result.content;
   } else {
     const ctx: StandardsContext = {

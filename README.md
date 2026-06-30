@@ -28,6 +28,7 @@ pw-ts-sample/
 ├── testing-standards/              # markdown + auto-heal-policy.json
 ├── docs/
 │   ├── LOCAL-RUN.md                # ← run tests + AI report on your laptop
+│   ├── AI-POST-AUTO-HEAL.md        # post-failure analyze + optional auto-heal design
 │   └── SELF-HOSTED-RUNNER.md       # GitHub self-hosted runner (optional CI)
 ├── scripts/                        # analyze_results, apply_ai_fixes, local pipeline
 │   └── install-self-hosted-runner.ps1

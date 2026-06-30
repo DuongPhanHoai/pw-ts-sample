@@ -9,7 +9,6 @@ import {
   type FailureTriageResult,
 } from "./failure-triage";
 import { chatJson, chatText } from "./llm";
-import { logLlmExchange } from "./llm-log";
 import {
   estimateTokens,
   mergeApiUsage,
@@ -301,13 +300,8 @@ export async function requestFailureTriage(
 ): Promise<{ triage: FailureTriageResult; tokenRecord: TokenCallRecord }> {
   const user = buildTriageUserPrompt(ctx, failures, stats);
   const estimatedInputTokens = estimateTriageInputTokens(ctx, failures, stats);
-  const result = await chatJson(TRIAGE_SYSTEM, user);
-  logLlmExchange({
+  const result = await chatJson(TRIAGE_SYSTEM, user, {
     label: "failure-triage",
-    system: TRIAGE_SYSTEM,
-    user,
-    response: result.content,
-    usage: result.usage,
     meta: {
       type: "failure-triage",
       failureCount: failures.length,
@@ -336,13 +330,8 @@ export async function requestFixPlanForGroup(
 ): Promise<{ raw: string; tokenRecord: TokenCallRecord }> {
   const user = buildFixPlanDetailUserPrompt(ctx, group, representative);
   const estimatedInputTokens = estimateFixPlanDetailInputTokens(ctx, group, representative);
-  const result = await chatJson(FIX_PLAN_DETAIL_SYSTEM, user);
-  logLlmExchange({
+  const result = await chatJson(FIX_PLAN_DETAIL_SYSTEM, user, {
     label: logLabel,
-    system: FIX_PLAN_DETAIL_SYSTEM,
-    user,
-    response: result.content,
-    usage: result.usage,
     meta: {
       type: "fix-plan-detail",
       groupId: group.groupId,
@@ -484,13 +473,8 @@ export async function requestFixPlanBatch(
 ): Promise<{ raw: string; tokenRecord: TokenCallRecord }> {
   const user = buildPlanUserPrompt(ctx, failures);
   const estimatedInputTokens = estimateFixPlanInputTokens(ctx, failures);
-  const result = await chatJson(FIX_PLAN_SYSTEM, user);
-  logLlmExchange({
+  const result = await chatJson(FIX_PLAN_SYSTEM, user, {
     label: logLabel,
-    system: FIX_PLAN_SYSTEM,
-    user,
-    response: result.content,
-    usage: result.usage,
     meta: {
       type: "fix-plan",
       failureCount: failures.length,
@@ -524,13 +508,8 @@ export async function requestAnalysisBatch(
   const user = buildAnalysisUserPrompt(ctx, failures, testLabel, stats);
   const estimatedInputTokens = estimateAnalysisInputTokens(ctx, failures, testLabel, stats);
   const analysisLogLabel = `${logLabel}-${testLabel.replace(/[^\w.-]+/g, "_").slice(0, 60)}`;
-  const result = await chatText(ANALYSIS_SYSTEM, user);
-  logLlmExchange({
+  const result = await chatText(ANALYSIS_SYSTEM, user, {
     label: analysisLogLabel,
-    system: ANALYSIS_SYSTEM,
-    user,
-    response: result.content,
-    usage: result.usage,
     meta: {
       type: "analysis",
       test: testLabel,
@@ -569,13 +548,8 @@ ${input.fixPlanJson}
 
 Summarize: overall health, main failure themes, top priority fixes, how many may auto-heal.`;
   const estimatedInputTokens = estimateTokens(`${system}\n\n${user}`);
-  const result = await chatText(system, user);
-  logLlmExchange({
+  const result = await chatText(system, user, {
     label: "executive-summary",
-    system,
-    user,
-    response: result.content,
-    usage: result.usage,
     meta: {
       type: "executive-summary",
       failureCount: input.failureCount,
@@ -623,13 +597,8 @@ ${input.batchSections.join("\n\n---\n\n")}
 Reference fix plan for categories:
 ${input.fixPlanJson}`;
   const estimatedInputTokens = estimateTokens(`${system}\n\n${user}`);
-  const result = await chatText(system, user);
-  logLlmExchange({
+  const result = await chatText(system, user, {
     label: "synthesis",
-    system,
-    user,
-    response: result.content,
-    usage: result.usage,
     meta: {
       type: "synthesis",
       batchCount: input.batchSections.length,
