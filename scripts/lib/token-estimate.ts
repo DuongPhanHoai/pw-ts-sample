@@ -12,7 +12,7 @@ export interface TokenUsageFromApi {
 
 export interface TokenCallRecord {
   label: string;
-  type: "fix-plan" | "analysis" | "executive-summary" | "synthesis" | "other";
+  type: "fix-plan" | "failure-triage" | "analysis" | "executive-summary" | "synthesis" | "other";
   testName?: string;
   estimatedInputTokens: number;
   estimatedOutputTokens?: number;

@@ -1,5 +1,13 @@
 import type { FailedTest } from "./playwright-results";
 import { classifyFailure } from "./failure-classifier";
+import {
+  compactFailureSummary,
+  compactFailureWithDetails,
+  DETAIL_FIELD_DESCRIPTIONS,
+  type DetailField,
+  type FailureTriageGroup,
+  type FailureTriageResult,
+} from "./failure-triage";
 import { chatJson, chatText } from "./llm";
 import { logLlmExchange } from "./llm-log";
 import {
@@ -33,9 +41,44 @@ Rules:
 - Return exactly one plan entry for the single failed test in the input (same testName).
 - Set canAutoHeal false when policy.categories[category].autoHeal is false.
 - proposedChangeSummary must be sharp and concrete (file, selector, wait, or data fix).
-- Read ALL failure fields: errorDetail, callLog, failureLocation, errorContextMd, pipelineHint.
+- Read ALL failure fields: errorDetail, callLog, failureLocation, errorContextMd, pageEvidence, pipelineHint.
+- pageEvidence carries CSS class names/rules and a rendered DOM excerpt from page-html / page-css attachments captured at failure — prefer these over guessing when the a11y snapshot lacks CSS classes.
+- If pageEvidence.closestClassMatch is present, use it as the primary selector fix (typo near-miss, e.g. .carts_item → .cart_item).
 - If callLog contains "waiting for locator(...)" or errorContextMd shows a bad selector / page snapshot mismatch, classify as locators-broken — NOT timing-flaky — even when Summary says "Test timeout exceeded".
 - Compare selectors in the failing line vs other lines in errorContextMd test source (e.g. #pwd vs #password).`;
+
+export const TRIAGE_SYSTEM = `You are an expert Playwright test triage analyst.
+Return ONLY valid JSON (no markdown fences) with this exact shape:
+{
+  "groups": [{
+    "groupId": "short-kebab-id",
+    "representativeTestName": "exact testName from input",
+    "memberTestNames": ["every testName in this duplicate group, including representative"],
+    "likelyCategory": "locators-broken|timing-flaky|backend-issue|business-logic-change|test-data-issue",
+    "triageSummary": "one sentence root cause hypothesis for the group",
+    "detailFieldsNeeded": ["..."],
+    "duplicateReason": "why these failures are the same issue"
+  }],
+  "notes": "optional short note about overall failure themes"
+}
+Rules:
+- Step 1 receives SUMMARY ONLY (errorSummary, callLog, failureLocation, pipelineHint) — no pageEvidence or errorContextMd yet.
+- Group tests that share the same root cause (e.g. same broken selector in the same page object line).
+- Every input testName must appear in exactly one memberTestNames list.
+- Pick one representativeTestName per group (prefer shortest name or first occurrence).
+- detailFieldsNeeded must list what extra evidence step 2 needs. Allowed values:
+${Object.entries(DETAIL_FIELD_DESCRIPTIONS)
+  .map(([key, desc]) => `  - ${key}: ${desc}`)
+  .join("\n")}
+- For locator / selector failures, usually request pageEvidence and errorContextMd.
+- For timing-only issues, errorDetail may suffice.
+- Do NOT request fields already sufficient in the summary (callLog, failureLocation, pipelineHint are already included).`;
+
+export const FIX_PLAN_DETAIL_SYSTEM = `${FIX_PLAN_SYSTEM}
+Additional rules for step 2:
+- Input includes triage context and ONLY the detail fields you previously requested.
+- Fix applies to ALL memberTestNames in the group — return one plan entry for the representative testName.
+- proposedChangeSummary must apply to every duplicate in the group.`;
 
 /** Default 1 = one failed test per LLM call (safer, smaller payloads). Set LMSTUDIO_BATCH_SIZE>1 to batch. */
 export function getBatchSize(): number {
@@ -110,6 +153,10 @@ export function compactFailure(f: FailedTest, maxErrorChars = getMaxErrorChars()
     payload.errorContextMd = truncate(f.errorContextMd, maxContextChars, "errorContextMd");
   }
 
+  if (f.pageEvidence) {
+    payload.pageEvidence = f.pageEvidence;
+  }
+
   const detected = classifyFailure(f);
   if (detected) {
     payload.pipelineHint = {
@@ -140,6 +187,182 @@ ${ctx.evaluationCriteria}
 
 ## Auto-heal policy
 ${ctx.autoHealPolicy}`;
+}
+
+export function buildTriageUserPrompt(
+  ctx: StandardsContext,
+  failures: FailedTest[],
+  stats: { passed: number; failed: number; skipped: number },
+): string {
+  const summaries = failures.map((f) => compactFailureSummary(f));
+  return `Project root: ${ctx.projectRoot.replace(/\\/g, "/")}
+Stats: ${JSON.stringify(stats)}
+
+${standardsBlock(ctx, true)}
+
+## Failed test summaries (${failures.length}) — step 1 triage only
+Review duplicates, group by root cause, and decide detailFieldsNeeded for step 2.
+${JSON.stringify(summaries, null, 2)}`;
+}
+
+export function buildFixPlanDetailUserPrompt(
+  ctx: StandardsContext,
+  group: FailureTriageGroup,
+  representative: FailedTest,
+): string {
+  const detailPayload = compactFailureWithDetails(
+    representative,
+    group.detailFieldsNeeded as DetailField[],
+  );
+
+  return `Project root: ${ctx.projectRoot.replace(/\\/g, "/")}
+
+${standardsBlock(ctx, true)}
+
+## Triage group (step 1 result)
+${JSON.stringify(group, null, 2)}
+
+## Representative failure with requested detail fields
+detailFieldsIncluded: ${JSON.stringify(group.detailFieldsNeeded)}
+${JSON.stringify(detailPayload, null, 2)}
+
+Return exactly one fix plan entry for representativeTestName. The fix applies to all memberTestNames.`;
+}
+
+export function estimateTriageInputTokens(
+  ctx: StandardsContext,
+  failures: FailedTest[],
+  stats: { passed: number; failed: number; skipped: number },
+): number {
+  return estimateTokens(`${TRIAGE_SYSTEM}\n\n${buildTriageUserPrompt(ctx, failures, stats)}`);
+}
+
+export function estimateFixPlanDetailInputTokens(
+  ctx: StandardsContext,
+  group: FailureTriageGroup,
+  representative: FailedTest,
+): number {
+  return estimateTokens(
+    `${FIX_PLAN_DETAIL_SYSTEM}\n\n${buildFixPlanDetailUserPrompt(ctx, group, representative)}`,
+  );
+}
+
+export function estimateTwoPhaseInputTokens(
+  ctx: StandardsContext,
+  failures: FailedTest[],
+  stats: { passed: number; failed: number; skipped: number },
+  estimatedGroupCount = Math.max(1, Math.ceil(failures.length / 3)),
+): {
+  triageInputTokens: number;
+  fixPlanInputTokens: number;
+  executiveSummaryInputTokens: number;
+  totalInputTokens: number;
+  estimatedOutputTokens: number;
+  estimatedTotalTokens: number;
+  estimatedGroupCount: number;
+} {
+  const triageInputTokens = estimateTriageInputTokens(ctx, failures, stats);
+  let fixPlanInputTokens = 0;
+
+  for (let i = 0; i < estimatedGroupCount; i++) {
+    const rep = failures[i] ?? failures[0];
+    if (!rep) break;
+    fixPlanInputTokens += estimateFixPlanDetailInputTokens(ctx, {
+      groupId: `estimate-${i}`,
+      representativeTestName: rep.testName,
+      memberTestNames: [rep.testName],
+      triageSummary: "estimate",
+      detailFieldsNeeded: ["pageEvidence", "errorContextMd"],
+    }, rep);
+  }
+
+  const executiveSummaryInputTokens = estimateTokens(
+    "executive summary ~" + failures.length * 300,
+  );
+  const estimatedOutputTokens =
+    500 + estimatedGroupCount * ESTIMATED_OUTPUT_TOKENS_FIX_PLAN + ESTIMATED_OUTPUT_TOKENS_EXEC_SUMMARY;
+  const totalInputTokens = triageInputTokens + fixPlanInputTokens + executiveSummaryInputTokens;
+
+  return {
+    triageInputTokens,
+    fixPlanInputTokens,
+    executiveSummaryInputTokens,
+    totalInputTokens,
+    estimatedOutputTokens,
+    estimatedTotalTokens: totalInputTokens + estimatedOutputTokens,
+    estimatedGroupCount,
+  };
+}
+
+export async function requestFailureTriage(
+  ctx: StandardsContext,
+  failures: FailedTest[],
+  stats: { passed: number; failed: number; skipped: number },
+): Promise<{ triage: FailureTriageResult; tokenRecord: TokenCallRecord }> {
+  const user = buildTriageUserPrompt(ctx, failures, stats);
+  const estimatedInputTokens = estimateTriageInputTokens(ctx, failures, stats);
+  const result = await chatJson(TRIAGE_SYSTEM, user);
+  logLlmExchange({
+    label: "failure-triage",
+    system: TRIAGE_SYSTEM,
+    user,
+    response: result.content,
+    usage: result.usage,
+    meta: {
+      type: "failure-triage",
+      failureCount: failures.length,
+      estimatedInputTokens,
+    },
+  });
+
+  const parsed = JSON.parse(result.content) as FailureTriageResult;
+  return {
+    triage: parsed,
+    tokenRecord: {
+      label: "failure-triage",
+      type: "failure-triage",
+      estimatedInputTokens,
+      estimatedOutputTokens: 500,
+      ...mergeApiUsage(estimatedInputTokens, result.usage),
+    },
+  };
+}
+
+export async function requestFixPlanForGroup(
+  ctx: StandardsContext,
+  group: FailureTriageGroup,
+  representative: FailedTest,
+  logLabel = "fix-plan-group",
+): Promise<{ raw: string; tokenRecord: TokenCallRecord }> {
+  const user = buildFixPlanDetailUserPrompt(ctx, group, representative);
+  const estimatedInputTokens = estimateFixPlanDetailInputTokens(ctx, group, representative);
+  const result = await chatJson(FIX_PLAN_DETAIL_SYSTEM, user);
+  logLlmExchange({
+    label: logLabel,
+    system: FIX_PLAN_DETAIL_SYSTEM,
+    user,
+    response: result.content,
+    usage: result.usage,
+    meta: {
+      type: "fix-plan-detail",
+      groupId: group.groupId,
+      representative: group.representativeTestName,
+      memberCount: group.memberTestNames.length,
+      detailFields: group.detailFieldsNeeded,
+      estimatedInputTokens,
+    },
+  });
+  return {
+    raw: result.content,
+    tokenRecord: {
+      label: logLabel,
+      type: "fix-plan",
+      testName: group.representativeTestName,
+      estimatedInputTokens,
+      estimatedOutputTokens: ESTIMATED_OUTPUT_TOKENS_FIX_PLAN,
+      ...mergeApiUsage(estimatedInputTokens, result.usage),
+    },
+  };
 }
 
 export function buildPlanUserPrompt(ctx: StandardsContext, failures: FailedTest[]): string {

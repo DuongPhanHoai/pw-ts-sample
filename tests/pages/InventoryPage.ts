@@ -8,28 +8,11 @@ export class InventoryPage {
     await this.page.locator(`[data-test="add-to-cart-${slug}"]`).click();
   }
 
-  /** Convenience wrapper kept for backward compatibility. */
-  async addBackpackToCart() {
-    await this.addItemToCart("sauce-labs-backpack");
-  }
-
   async openCart() {
     await this.page.click(".shopping_cart_link");
   }
 
-  async expectItemsInPage(count: number) {
-    await expect(this.page.locator(".inventory_item")).toHaveCount(count);
-  }
-
   async expectItemsInCart(count: number) {
-    await expect(this.page.locator(".cart_item")).toHaveCount(count);
-  }
-
-  async smokePage() {
-    await this.page.goto("/inventory.html");
-    await expect(this.page.locator(".inventory_list")).toBeVisible();
-    await expect(
-      this.page.locator(".inventory_item_name").first(),
-    ).toBeVisible();
+    await expect(this.page.locator(".carts_item")).toHaveCount(count);
   }
 }

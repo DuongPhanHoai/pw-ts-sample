@@ -10,7 +10,7 @@ export class LoginPage {
   /** Fill the form and click submit. No post-conditions — caller decides what success looks like. */
   async loginAs(username: string, password: string) {
     await this.page.locator("#user-name").fill(username);
-    await this.page.locator("#pwd").fill(password);
+    await this.page.locator("#password").fill(password);
     await this.page.locator("#login-button").click();
   }
 

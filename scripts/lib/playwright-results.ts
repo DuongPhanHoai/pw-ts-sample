@@ -1,4 +1,7 @@
 import fs from "node:fs";
+import { extractWaitingLocatorSelector } from "./failure-classifier";
+import { buildPageEvidence } from "./page-evidence";
+import type { PageEvidence } from "./page-evidence";
 
 export type TestStatus = "passed" | "failed" | "timedOut" | "skipped" | "flaky" | "interrupted";
 
@@ -30,6 +33,8 @@ export interface FailedTest extends TestCase {
   callLog?: string;
   /** Contents of test-results/.../error-context.md when present. */
   errorContextMd?: string;
+  /** CSS/DOM excerpt from page-html / page-css attachments captured on failure. */
+  pageEvidence?: PageEvidence;
 }
 
 interface PlaywrightJsonReport {
@@ -62,6 +67,7 @@ interface PlaywrightAttachment {
   name?: string;
   contentType?: string;
   path?: string;
+  body?: string;
 }
 
 interface PlaywrightTestResult {
@@ -116,14 +122,30 @@ export function extractCallLog(message: string): string | undefined {
   return log || undefined;
 }
 
-function readErrorContextAttachment(attachments?: PlaywrightAttachment[]): string | undefined {
-  const attachment = attachments?.find((a) => a.name === "error-context" && a.path);
-  if (!attachment?.path || !fs.existsSync(attachment.path)) return undefined;
-  try {
-    return fs.readFileSync(attachment.path, "utf8");
-  } catch {
-    return undefined;
+function readAttachmentText(
+  attachments: PlaywrightAttachment[] | undefined,
+  name: string,
+): string | undefined {
+  const attachment = attachments?.find((a) => a.name === name);
+  if (!attachment) return undefined;
+
+  if (attachment.path && fs.existsSync(attachment.path)) {
+    try {
+      return fs.readFileSync(attachment.path, "utf8");
+    } catch {
+      return undefined;
+    }
   }
+
+  if (attachment.body) {
+    try {
+      return Buffer.from(attachment.body, "base64").toString("utf8");
+    } catch {
+      return undefined;
+    }
+  }
+
+  return undefined;
 }
 
 function pickActionableError(errors?: PlaywrightErrorEntry[]): PlaywrightErrorEntry | undefined {
@@ -147,6 +169,7 @@ function buildEnrichedError(result: PlaywrightTestResult): {
   failureLocation?: FailureLocation;
   callLog?: string;
   errorContextMd?: string;
+  pageEvidence?: PageEvidence;
 } {
   const errorSummary = result.error?.message
     ? stripAnsi(result.error.message).trim()
@@ -167,7 +190,9 @@ function buildEnrichedError(result: PlaywrightTestResult): {
         }
       : undefined;
 
-  const errorContextMd = readErrorContextAttachment(result.attachments);
+  const errorContextMd = readAttachmentText(result.attachments, "error-context");
+  const pageHtml = readAttachmentText(result.attachments, "page-html");
+  const pageCss = readAttachmentText(result.attachments, "page-css");
 
   const parts: string[] = [];
   if (errorSummary) parts.push(`Summary: ${errorSummary}`);
@@ -187,7 +212,21 @@ function buildEnrichedError(result: PlaywrightTestResult): {
       ? parts.join("\n\n")
       : (errorSummary ?? actionableMessage ?? "Unknown test failure");
 
-  return { error, errorSummary, failureLocation, callLog, errorContextMd };
+  const failureDraft = {
+    error,
+    errorSummary,
+    failureLocation,
+    callLog,
+    errorContextMd,
+  } as FailedTest;
+
+  const pageEvidence = buildPageEvidence(
+    pageHtml,
+    pageCss,
+    extractWaitingLocatorSelector(failureDraft),
+  );
+
+  return { ...failureDraft, pageEvidence };
 }
 
 function collectTests(
@@ -204,10 +243,25 @@ function collectTests(
       if (!result?.status) continue;
 
       const status = mapStatus(result.status);
-      const enriched =
-        status === "failed" || status === "timedOut"
-          ? buildEnrichedError(result)
-          : { error: undefined as string | undefined };
+      if (status === "failed" || status === "timedOut") {
+        const enriched = buildEnrichedError(result);
+        out.push({
+          testId: spec.id ?? testName,
+          testName,
+          file: spec.file ?? suite.file,
+          line: spec.line,
+          status,
+          error: enriched.error,
+          tags: spec.tags ?? [],
+          durationMs: result.duration,
+          errorSummary: enriched.errorSummary,
+          failureLocation: enriched.failureLocation,
+          callLog: enriched.callLog,
+          errorContextMd: enriched.errorContextMd,
+          pageEvidence: enriched.pageEvidence,
+        } as FailedTest);
+        continue;
+      }
 
       out.push({
         testId: spec.id ?? testName,
@@ -215,17 +269,8 @@ function collectTests(
         file: spec.file ?? suite.file,
         line: spec.line,
         status,
-        error: enriched.error,
         tags: spec.tags ?? [],
         durationMs: result.duration,
-        ...(status === "failed" || status === "timedOut"
-          ? {
-              errorSummary: enriched.errorSummary,
-              failureLocation: enriched.failureLocation,
-              callLog: enriched.callLog,
-              errorContextMd: enriched.errorContextMd,
-            }
-          : {}),
       });
     }
   }

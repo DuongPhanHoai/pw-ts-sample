@@ -4,18 +4,21 @@ import path from "node:path";
 import { z } from "zod";
 import { chatText } from "./lib/llm";
 import {
-  chunk,
-  estimateRunInputTokens,
-  getBatchSize,
-  isPerTestMode,
-  requestAnalysisBatch,
+  buildDeterministicTriage,
+  normalizeDetailFields,
+  renderTriageAnalysisMarkdown,
+  resolveTriageGroups,
+  type FailureTriageResult,
+} from "./lib/failure-triage";
+import {
+  estimateTwoPhaseInputTokens,
   requestExecutiveSummary,
-  requestFixPlanBatch,
-  requestSynthesisAnalysis,
+  requestFailureTriage,
+  requestFixPlanForGroup,
   type StandardsContext,
 } from "./lib/llm-batch";
-import { getFailureLimit, logLlmExchange, shouldLogLlmPrompts } from "./lib/llm-log";
 import { applyDeterministicClassification, classifyFailure } from "./lib/failure-classifier";
+import { getFailureLimit, logLlmExchange, shouldLogLlmPrompts } from "./lib/llm-log";
 import { loadTestRun, type FailedTest } from "./lib/playwright-results";
 import { paths, projectRoot } from "./lib/paths";
 import {
@@ -25,6 +28,37 @@ import {
 } from "./lib/test-report";
 import { formatTokenSummary } from "./lib/token-estimate";
 import { TokenTracker } from "./lib/token-tracker";
+
+const DetailFieldSchema = z.enum([
+  "errorDetail",
+  "errorContextMd",
+  "pageEvidence",
+  "pageEvidenceCssOnly",
+  "pageEvidenceDomOnly",
+]);
+
+const TriageGroupSchema = z.object({
+  groupId: z.string(),
+  representativeTestName: z.string(),
+  memberTestNames: z.array(z.string()).min(1),
+  likelyCategory: z
+    .enum([
+      "locators-broken",
+      "timing-flaky",
+      "backend-issue",
+      "business-logic-change",
+      "test-data-issue",
+    ])
+    .optional(),
+  triageSummary: z.string(),
+  detailFieldsNeeded: z.array(DetailFieldSchema).min(1),
+  duplicateReason: z.string().optional(),
+});
+
+const TriageSchema = z.object({
+  groups: z.array(TriageGroupSchema).min(1),
+  notes: z.string().optional(),
+});
 
 const FixPlanItemSchema = z.object({
   testId: z.string(),
@@ -58,8 +92,6 @@ async function main(): Promise<void> {
 
   const run = loadTestRun(paths.resultsJson);
   const testEnv = process.env.TEST_ENV ?? "test";
-  const batchSize = getBatchSize();
-  const perTestMode = isPerTestMode();
   const failureLimit = getFailureLimit();
   const tokenTracker = new TokenTracker();
 
@@ -83,6 +115,7 @@ async function main(): Promise<void> {
   let fixPlan: FixPlanItem[] = [];
   let aiAnalysis = "";
   let aiSummary = "";
+  let triageResult: FailureTriageResult | undefined;
 
   if (run.failures.length === 0) {
     const system = "You are a QA lead. Write 2-3 sentences in plain English.";
@@ -110,30 +143,36 @@ Confirm success and note no fixes are needed.`;
       projectRoot,
     };
 
-    const preEstimate = estimateRunInputTokens(ctx, failuresToAnalyze, stats);
+    const preEstimate = estimateTwoPhaseInputTokens(ctx, failuresToAnalyze, stats);
     console.log(
-      perTestMode
-        ? `Mode: one failed test per LLM call (${failuresToAnalyze.length} tests × 2 calls + summary)`
-        : `Mode: batch size ${batchSize} (${chunk(failuresToAnalyze, batchSize).length} batches × 2 calls + summary)`,
+      `Mode: two-phase analyze (1 triage call + ${preEstimate.estimatedGroupCount} fix group call(s) + summary)`,
     );
     console.log(
       `Token pre-estimate: ~${preEstimate.totalInputTokens.toLocaleString()} input + ~${preEstimate.estimatedOutputTokens.toLocaleString()} output ≈ ~${preEstimate.estimatedTotalTokens.toLocaleString()} total`,
     );
 
-    const batches = chunk(failuresToAnalyze, batchSize);
+    console.log("  Step 1: triage failure summaries…");
+    triageResult = await runTriageStep(ctx, failuresToAnalyze, stats, tokenTracker);
+    fs.writeFileSync(paths.aiTriage, JSON.stringify(triageResult, null, 2), "utf8");
 
-    fixPlan = await buildFixPlanAll(ctx, failuresToAnalyze, batches, tokenTracker);
+    console.log(`  Step 2: fix plan for ${triageResult.groups.length} group(s)…`);
+    fixPlan = await buildFixPlanFromTriage(ctx, triageResult, failuresToAnalyze, tokenTracker);
+
     const fixPlanJson = JSON.stringify({ plan: fixPlan }, null, 2);
-    aiAnalysis = await buildAnalysisAll(ctx, batches, stats, fixPlanJson, tokenTracker);
+    aiAnalysis = buildTwoPhaseAnalysisMarkdown(
+      triageResult,
+      fixPlan,
+      failuresToAnalyze.length,
+    );
 
     const execResult = await requestExecutiveSummary({
       stats,
       testEnv,
       fixPlanJson,
       failureCount: failuresToAnalyze.length,
-      perTestMode,
+      perTestMode: false,
     }).catch(() => ({
-      summary: `${run.failed} test(s) failed. See Tests to fix in ai-test-report.md for per-test suggestions.`,
+      summary: `${run.failed} test(s) failed. See ai-analysis.md for triage and fix suggestions.`,
       tokenRecord: {
         label: "executive-summary-fallback",
         type: "executive-summary" as const,
@@ -166,13 +205,12 @@ Confirm success and note no fixes are needed.`;
     );
     fs.writeFileSync(paths.aiFixPlan, JSON.stringify({ plan: [] }, null, 2), "utf8");
   } else {
-    const modeLabel = perTestMode ? "one test per LLM call" : `batch size ${batchSize}`;
     const tokenBlock = formatTokenSummary(tokenTracker.summary());
     const header = `# AI Test Analysis
 
 Generated: ${new Date().toISOString()}
 Failures analyzed: ${failuresToAnalyze.length}${failureLimit ? ` (limit ${failureLimit} of ${run.failures.length} total failures)` : ""}
-Mode: ${modeLabel}
+Mode: two-phase (triage → selective detail fix plan)
 
 ## Token usage
 ${tokenBlock}
@@ -187,8 +225,8 @@ ${tokenBlock}
         {
           generatedAt: new Date().toISOString(),
           failureCount: failuresToAnalyze.length,
-          batchSize,
-          perTestMode,
+          mode: "two-phase",
+          triage: triageResult,
           tokenSummary: tokenTracker.summary(),
           plan: fixPlan,
         },
@@ -204,6 +242,7 @@ ${tokenBlock}
   console.log(`Status: ${report.overallStatus.toUpperCase()} — ${report.headline}`);
   if (failuresToAnalyze.length > 0) {
     console.log(`Wrote ${paths.aiAnalysis}`);
+    console.log(`Wrote ${paths.aiTriage}`);
     console.log(`Fix plan coverage: ${fixPlan.length}/${failuresToAnalyze.length} tests`);
     console.log(`Wrote ${paths.aiFixPlan}`);
     console.log(`Wrote ${tokenReportPath}`);
@@ -211,94 +250,75 @@ ${tokenBlock}
   }
 }
 
-function testLabel(
-  batch: FailedTest[],
-  batchIndex: number,
-  batchCount: number,
-  totalFailures: number,
-): string {
-  if (isPerTestMode()) {
-    return `${batchIndex + 1}/${totalFailures} — ${batch[0]?.testName ?? "unknown"}`;
+async function runTriageStep(
+  ctx: StandardsContext,
+  failures: FailedTest[],
+  stats: { passed: number; failed: number; skipped: number },
+  tokenTracker: TokenTracker,
+): Promise<FailureTriageResult> {
+  try {
+    const { triage, tokenRecord } = await requestFailureTriage(ctx, failures, stats);
+    tokenTracker.record(tokenRecord);
+
+    const parsed = TriageSchema.parse({
+      ...triage,
+      groups: triage.groups.map((g) => ({
+        ...g,
+        detailFieldsNeeded: normalizeDetailFields(g.detailFieldsNeeded),
+      })),
+    });
+    return parsed;
+  } catch (err) {
+    console.warn("  Triage LLM failed, using deterministic grouping:", err);
+    return buildDeterministicTriage(failures);
   }
-  return `${batchIndex + 1}/${batchCount} (${batch.length} tests)`;
 }
 
-async function buildFixPlanAll(
+async function buildFixPlanFromTriage(
   ctx: StandardsContext,
+  triage: FailureTriageResult,
   allFailures: FailedTest[],
-  batches: FailedTest[][],
   tokenTracker: TokenTracker,
 ): Promise<FixPlanItem[]> {
+  const resolvedGroups = resolveTriageGroups(triage, allFailures);
   const merged: FixPlanItem[] = [];
-  const covered = new Set<string>();
 
-  for (let i = 0; i < batches.length; i++) {
-    const batch = batches[i];
-    const label = testLabel(batch, i, batches.length, allFailures.length);
-    console.log(`  Fix plan ${label}…`);
+  for (let i = 0; i < resolvedGroups.length; i++) {
+    const { group, representative, members } = resolvedGroups[i];
+    const label = `${group.groupId} (${members.length} test(s))`;
+    console.log(`    Fix plan ${i + 1}/${resolvedGroups.length}: ${label}…`);
+
+    let item: FixPlanItem | null = null;
 
     try {
-      const { raw, tokenRecord } = await requestFixPlanBatch(
+      const { raw, tokenRecord } = await requestFixPlanForGroup(
         ctx,
-        batch,
-        isPerTestMode() ? `fix-plan-test-${i + 1}` : `fix-plan-batch-${i + 1}`,
+        group,
+        representative,
+        `fix-plan-${group.groupId}`,
       );
       tokenTracker.record(tokenRecord);
-
       const parsed = FixPlanSchema.parse(JSON.parse(raw));
-      for (const item of parsed.plan) {
-        const failure = batch.find((f) => f.testName === item.testName) ?? batch[0];
-        merged.push(failure ? applyDeterministicClassification(item, failure) : item);
-        covered.add(item.testName);
-      }
+      const planItem = parsed.plan[0];
+      item = planItem ? applyDeterministicClassification(planItem, representative) : null;
     } catch (err) {
-      console.warn(`  Fix plan failed for ${label}, falling back to heuristic:`, err);
-      for (const failure of batch) {
-        const item = await requestSingleFixPlan(ctx, failure, tokenTracker, i + 1);
-        if (item) {
-          merged.push(item);
-          covered.add(item.testName);
-        }
-      }
+      console.warn(`    Fix plan failed for ${group.groupId}, using heuristic:`, err);
+      item = buildHeuristicFixPlanItem(representative);
     }
-  }
 
-  const missing = allFailures.filter((f) => !covered.has(f.testName));
-  if (missing.length > 0) {
-    console.log(`  Filling ${missing.length} missing fix-plan entries individually…`);
-    for (const failure of missing) {
-      const item = await requestSingleFixPlan(
-        ctx,
-        failure,
-        tokenTracker,
-        allFailures.indexOf(failure) + 1,
-      );
-      if (item) merged.push(item);
+    if (!item) continue;
+
+    for (const member of members) {
+      merged.push({
+        ...item,
+        testId: member.testId,
+        testName: member.testName,
+        rootCauseSummary: item.rootCauseSummary ?? group.triageSummary,
+      });
     }
   }
 
   return merged;
-}
-
-async function requestSingleFixPlan(
-  ctx: StandardsContext,
-  failure: FailedTest,
-  tokenTracker: TokenTracker,
-  index: number,
-): Promise<FixPlanItem | null> {
-  try {
-    const { raw, tokenRecord } = await requestFixPlanBatch(
-      ctx,
-      [failure],
-      `fix-plan-single-${index}`,
-    );
-    tokenTracker.record(tokenRecord);
-    const parsed = FixPlanSchema.parse(JSON.parse(raw));
-    const item = parsed.plan[0];
-    return item ? applyDeterministicClassification(item, failure) : null;
-  } catch {
-    return buildHeuristicFixPlanItem(failure);
-  }
 }
 
 function buildHeuristicFixPlanItem(failure: FailedTest): FixPlanItem {
@@ -328,10 +348,7 @@ function buildHeuristicFixPlanItem(failure: FailedTest): FixPlanItem {
   }
 
   const rootLine =
-    failure.errorSummary ??
-    failure.error.split("\n")[0] ??
-    failure.error;
-
+    failure.errorSummary ?? failure.error.split("\n")[0] ?? failure.error;
   const loc = failure.failureLocation;
   const fileHint = loc?.file ?? failure.file ?? "tests/";
 
@@ -353,65 +370,44 @@ function buildHeuristicFixPlanItem(failure: FailedTest): FixPlanItem {
   };
 }
 
-async function buildAnalysisAll(
-  ctx: StandardsContext,
-  batches: FailedTest[][],
-  stats: { passed: number; failed: number; skipped: number },
-  fixPlanJson: string,
-  tokenTracker: TokenTracker,
-): Promise<string> {
-  const sections: string[] = [];
-  const totalFailures = batches.reduce((n, b) => n + b.length, 0);
+function buildTwoPhaseAnalysisMarkdown(
+  triage: FailureTriageResult,
+  fixPlan: FixPlanItem[],
+  failureCount: number,
+): string {
+  const planByName = new Map(fixPlan.map((p) => [p.testName, p]));
+  const lines = [
+    renderTriageAnalysisMarkdown(triage, triage.groups.length, failureCount),
+    "## Step 2 — Fix suggestions",
+    "",
+  ];
 
-  for (let i = 0; i < batches.length; i++) {
-    const batch = batches[i];
-    const label = testLabel(batch, i, batches.length, totalFailures);
-    console.log(`  Analysis ${label}…`);
-
-    const { markdown, tokenRecord } = await requestAnalysisBatch(
-      ctx,
-      batch,
-      label,
-      stats,
-      isPerTestMode() ? `analysis-test-${i + 1}` : `analysis-batch-${i + 1}`,
-    ).catch((err) => ({
-      markdown: `### Analysis error\n\n${String(err)}\n\n${batch.map((f) => `- **${f.testName}**: ${f.error.split("\n")[0]}`).join("\n")}`,
-      tokenRecord: {
-        label: `analysis-error-${i + 1}`,
-        type: "analysis" as const,
-        testName: batch[0]?.testName,
-        estimatedInputTokens: 0,
-        source: "estimated" as const,
-      },
-    }));
-    tokenTracker.record(tokenRecord);
-
-    if (isPerTestMode()) {
-      sections.push(`## Test ${i + 1}/${totalFailures}\n\n${markdown}`);
-    } else {
-      sections.push(`## Batch ${label}\n\n${markdown}`);
+  for (const group of triage.groups) {
+    const repPlan = planByName.get(group.representativeTestName);
+    lines.push(`### ${group.groupId}: ${group.representativeTestName}`);
+    lines.push(`- **Applies to:** ${group.memberTestNames.length} test(s)`);
+    if (group.detailFieldsNeeded.length > 0) {
+      lines.push(`- **Detail used:** ${group.detailFieldsNeeded.join(", ")}`);
     }
+
+    if (repPlan) {
+      lines.push(`- **Category:** ${repPlan.category}`);
+      lines.push(`- **Can auto-heal:** ${repPlan.canAutoHeal ? "yes" : "no"}`);
+      if (repPlan.rootCauseSummary) lines.push(`- **Root cause:** ${repPlan.rootCauseSummary}`);
+      lines.push(`- **Fix:** ${repPlan.proposedChangeSummary}`);
+      if (repPlan.codeChangeHints.length > 0) {
+        lines.push("- **Hints:**");
+        for (const hint of repPlan.codeChangeHints) {
+          lines.push(`  - \`${hint.filePath}\`: ${hint.suggestedSelectorOrChange}`);
+        }
+      }
+    } else {
+      lines.push("- **Fix:** (no plan generated for representative)");
+    }
+    lines.push("");
   }
 
-  if (isPerTestMode() || sections.length <= 1) {
-    return sections.join("\n\n");
-  }
-
-  console.log("  Synthesizing full analysis across all batches…");
-  const synthesis = await requestSynthesisAnalysis({
-    batchSections: sections,
-    fixPlanJson,
-  }).catch(() => ({
-    markdown: sections.join("\n\n"),
-    tokenRecord: {
-      label: "synthesis-error",
-      type: "synthesis" as const,
-      estimatedInputTokens: 0,
-      source: "estimated" as const,
-    },
-  }));
-  tokenTracker.record(synthesis.tokenRecord);
-  return synthesis.markdown;
+  return lines.join("\n");
 }
 
 main().catch((err) => {

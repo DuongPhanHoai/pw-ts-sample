@@ -7,6 +7,7 @@ export const paths = {
   junitXml: path.join(projectRoot, "reports", "junit-results.xml"),
   aiAnalysis: path.join(projectRoot, "reports", "ai-analysis.md"),
   aiFixPlan: path.join(projectRoot, "reports", "ai-fix-plan.json"),
+  aiTriage: path.join(projectRoot, "reports", "ai-triage.json"),
   aiTestReport: path.join(projectRoot, "reports", "ai-test-report.md"),
   aiTestReportJson: path.join(projectRoot, "reports", "ai-test-report.json"),
   standardsDir: path.join(projectRoot, "testing-standards"),
