@@ -3,11 +3,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import { chatText } from "./lib/llm";
-import {
-  extractSelectorFromActionLine,
-  replaceSelectorInSource,
-  SELECTOR_QUOTE_RULES,
-} from "./lib/selector-quotes";
 import { loadTestRun, type FailedTest } from "./lib/playwright-results";
 import { paths, projectRoot } from "./lib/paths";
 
@@ -30,6 +25,7 @@ const FixPlanSchema = z.object({
         canAutoHeal: z.boolean(),
         confidence: z.number().min(0).max(1).optional(),
         proposedChangeSummary: z.string(),
+        groupId: z.string().optional(),
         codeChangeHints: z.array(
           z.object({
             filePath: z.string(),
@@ -54,6 +50,7 @@ const FixPlanSchema = z.object({
       canAutoHeal: z.boolean(),
       confidence: z.number().min(0).max(1).optional(),
       proposedChangeSummary: z.string(),
+      groupId: z.string().optional(),
       codeChangeHints: z.array(
         z.object({
           filePath: z.string(),
@@ -99,112 +96,40 @@ function isAllowedPath(relativePath: string, allowedPrefixes?: string[]): boolea
   );
 }
 
-function extractSelectorFromHint(text: string): string | undefined {
-  const lineMatch = text.match(/\.(?:click|fill|locator)\([^)]+\)/);
-  if (lineMatch) {
-    const parsed = extractSelectorFromActionLine(lineMatch[0]);
-    if (parsed) return parsed.selector;
-  }
-
-  const clickSingle = text.match(/\.click\(\s*'((?:\\.|[^'])*)'\s*\)/)?.[1];
-  if (clickSingle) return clickSingle.replace(/\\(.)/g, "$1");
-
-  const clickDouble = text.match(/\.click\(\s*"((?:\\.|[^"])*)"\s*\)/)?.[1];
-  if (clickDouble) return clickDouble.replace(/\\(.)/g, "$1");
-
-  if (/toHaveCount\s*\(/.test(text)) return undefined;
-
-  return text.match(/locator\(\s*["']([^"']+)["']\s*\)/)?.[1];
-}
-
-function extractSelectorFromReason(reason: string): string | undefined {
-  const dataTest =
-    reason.match(/data-test=["']([^"']+)["']/i)?.[1] ??
-    reason.match(/data-test=\\["']([^"']+)\\["']/i)?.[1];
-  if (dataTest) return `[data-test="${dataTest}"]`;
-
-  const idMatch = reason.match(/\bid=["']([^"']+)["']/i)?.[1];
-  if (idMatch) return `#${idMatch}`;
-
-  const classMatch = reason.match(/\.([\w-]+)/)?.[1];
-  if (classMatch && reason.includes("checkout_button")) return `.${classMatch}`;
-
-  return undefined;
-}
-
-function extractNewSelector(summary: string, hintText: string, reason?: string): string | undefined {
-  const fromHint = extractSelectorFromHint(hintText);
-  if (fromHint) return fromHint;
-
-  const fromReason = reason ? extractSelectorFromReason(reason) : undefined;
-  if (fromReason) return fromReason;
-
-  const bracketMatch = summary.match(/\[(data-test[^\]]+)\]/i);
-  if (bracketMatch) return `[${bracketMatch[1]}]`;
-
-  const bracketMatch2 = summary.match(/\bwith (\[[^\]]+\])/i);
-  if (bracketMatch2) return bracketMatch2[1];
-
-  const idMatch = summary.match(/\bwith (#[\w-]+)/i);
-  if (idMatch) return idMatch[1];
-
-  const classMatch = summary.match(/\bwith (\.[\w-]+)/i);
-  if (classMatch) return classMatch[1];
-
-  const clickInSummary = summary.match(/\.click\(\s*(\[[^\]]+\])\s*\)/)?.[1];
-  if (clickInSummary) return clickInSummary;
-
-  return undefined;
-}
-
-function extractOldSelector(reason: string, summary: string): string | undefined {
-  const fromReason =
-    reason.match(/waiting for locator\('([^']+)'\)/i)?.[1] ??
-    reason.match(/waiting for locator\("([^"]+)"\)/i)?.[1];
-  if (fromReason) return fromReason;
-
-  const fromSummary =
-    summary.match(/replace (#\S+|\[[^\]]+\]|\.[\w-]+|\S+) with/i)?.[1] ??
-    summary.match(/locator\(["']([^"']+)["']\)/i)?.[1];
-  return fromSummary;
-}
-
-function getSelectorOnLine(content: string, line: number): string | undefined {
-  const lines = content.split(/\r?\n/);
-  const idx = line - 1;
-  if (idx < 0 || idx >= lines.length) return undefined;
-  return extractSelectorFromActionLine(lines[idx])?.selector;
-}
-
-function selectorsEquivalent(a?: string, b?: string): boolean {
-  if (!a || !b) return false;
-  if (a === b) return true;
-  const norm = (s: string) => s.replace(/^#/, "").replace(/^\[data-test="([^"]+)"\]$/, "$1");
-  return norm(a) === norm(b);
-}
-
 function isStaleHint(hintText: string): boolean {
   return /toHaveCount\s*\(/.test(hintText);
 }
 
-function isUnsafeReplacement(
-  content: string,
-  newSelector: string,
-  failureLine?: number,
-): boolean {
-  const lines = content.split(/\r?\n/);
-  for (let i = 0; i < lines.length; i++) {
-    const lineNo = i + 1;
-    if (failureLine && lineNo === failureLine) continue;
-    const line = lines[i];
-    if (!line.includes(newSelector)) continue;
-    if (/\.(?:click|fill|dblclick|press)\(/.test(line)) continue;
-    if (/expect\(|toBeVisible|toHaveText|toHaveCount/.test(line)) return true;
-  }
-  return false;
+type PlanItem = z.infer<typeof FixPlanSchema>["plan"][number];
+
+function resolveFailureLine(
+  item: PlanItem,
+  failuresByTestName: Map<string, FailedTest>,
+  snapshots: Record<string, unknown>,
+): number | undefined {
+  const snap = snapshots[item.testName] as Partial<FailedTest> | undefined;
+  const live = failuresByTestName.get(item.testName);
+  return (
+    live?.failureLocation?.line ??
+    failuresByTestName.get(item.testName)?.failureLocation?.line ??
+    snap?.failureLocation?.line
+  );
 }
 
-type PlanItem = z.infer<typeof FixPlanSchema>["plan"][number];
+/** One apply action per file+line (or file+group), not per file only. */
+function resolveApplyTargetKey(
+  item: PlanItem,
+  failuresByTestName: Map<string, FailedTest>,
+  snapshots: Record<string, unknown>,
+): string | null {
+  const file = normalizeRelativePath(item.codeChangeHints[0]?.filePath ?? "");
+  if (!file) return null;
+
+  const line = resolveFailureLine(item, failuresByTestName, snapshots);
+  if (line) return `${file}:${line}`;
+  if (item.groupId) return `${file}:${item.groupId}`;
+  return `${file}:${item.testName}`;
+}
 
 function logApply(section: string, details: Record<string, unknown>): void {
   console.log(`\n[apply] ${section}`);
@@ -274,32 +199,6 @@ function pickApplyPlanItem(
   return llmItem && !isStalePlanItem(llmItem) ? llmItem : rawItem;
 }
 
-function tryDeterministicLocatorFix(input: {
-  original: string;
-  category: string;
-  proposedChangeSummary: string;
-  hint: { reason: string; suggestedSelectorOrChange: string };
-  failureLine?: number;
-}): string | null {
-  if (input.category !== "locators-broken") return null;
-
-  const oldSelector = extractOldSelector(input.hint.reason, input.proposedChangeSummary);
-  const newSelector = extractNewSelector(
-    input.proposedChangeSummary,
-    input.hint.suggestedSelectorOrChange,
-    input.hint.reason,
-  );
-  if (!oldSelector || !newSelector) return null;
-  if (isUnsafeReplacement(input.original, newSelector, input.failureLine)) return null;
-
-  return replaceSelectorInSource(
-    input.original,
-    oldSelector,
-    newSelector,
-    input.failureLine,
-  );
-}
-
 async function main(): Promise<void> {
   const mode = getAutoFixMode();
   console.log(`AUTO_FIX_TESTS=${mode}`);
@@ -349,16 +248,20 @@ async function main(): Promise<void> {
     return;
   }
 
-  const seenFiles = new Set<string>();
+  const seenTargets = new Set<string>();
   const uniqueCandidates = candidates.filter((item) => {
-    const file = normalizeRelativePath(item.codeChangeHints[0]?.filePath ?? "");
-    if (!file || seenFiles.has(file)) return false;
-    seenFiles.add(file);
+    const key = resolveApplyTargetKey(item, failuresByTestName, snapshots);
+    if (!key || seenTargets.has(key)) return false;
+    seenTargets.add(key);
     return true;
   });
 
+  const skippedDuplicateTargets = candidates.length - uniqueCandidates.length;
   console.log(
-    `Apply targets: ${uniqueCandidates.length} fix group(s) from ${candidates.length} plan row(s)`,
+    `Apply targets: ${uniqueCandidates.length} fix target(s) from ${candidates.length} plan row(s)` +
+      (skippedDuplicateTargets > 0
+        ? ` (${skippedDuplicateTargets} duplicate file/line target(s) skipped)`
+        : ""),
   );
 
   const touched = new Set<string>();
@@ -366,6 +269,9 @@ async function main(): Promise<void> {
 
   for (const rawItem of uniqueCandidates) {
     if (touched.size >= maxFiles) break;
+
+    const applyTargetKey = resolveApplyTargetKey(rawItem, failuresByTestName, snapshots);
+    if (!applyTargetKey) continue;
 
     const relativePathEarly = normalizeRelativePath(rawItem.codeChangeHints[0].filePath);
     const sourceItem = pickApplyPlanItem(
@@ -385,6 +291,7 @@ async function main(): Promise<void> {
     const relativePath = normalizeRelativePath(hint.filePath);
 
     logApply("candidate", {
+      applyTarget: applyTargetKey,
       testName: item.testName,
       file: relativePath,
       category: item.category,
@@ -402,8 +309,11 @@ async function main(): Promise<void> {
       failureLine: failure?.failureLocation?.line,
     });
 
-    if (touched.has(relativePath)) {
-      logApply("skip", { reason: "file already touched this run", file: relativePath });
+    if (touched.has(applyTargetKey)) {
+      logApply("skip", {
+        reason: "target already applied this run",
+        applyTarget: applyTargetKey,
+      });
       continue;
     }
 
@@ -420,38 +330,6 @@ async function main(): Promise<void> {
       continue;
     }
 
-    const original = fs.readFileSync(fullPath, "utf8");
-    const failureLine = failure?.failureLocation?.line;
-    const oldSelector = extractOldSelector(hint.reason, item.proposedChangeSummary);
-    const newSelector = extractNewSelector(
-      item.proposedChangeSummary,
-      hint.suggestedSelectorOrChange,
-      hint.reason,
-    );
-    const currentOnLine =
-      failureLine !== undefined ? getSelectorOnLine(original, failureLine) : undefined;
-
-    logApply("selectors parsed", {
-      oldSelector,
-      newSelector,
-      currentOnLine: currentOnLine ?? "(unknown)",
-      staleHint: isStaleHint(hint.suggestedSelectorOrChange),
-    });
-
-    if (
-      newSelector &&
-      currentOnLine &&
-      selectorsEquivalent(currentOnLine, newSelector)
-    ) {
-      logApply("skip", {
-        reason: "already fixed on failure line",
-        file: `${relativePath}:${failureLine}`,
-        selector: currentOnLine,
-      });
-      touched.add(relativePath);
-      continue;
-    }
-
     if (isStalePlanItem(item)) {
       logApply("skip", {
         reason: "stale fix plan hint — re-run: npx playwright test && npm run analyze:results",
@@ -460,92 +338,39 @@ async function main(): Promise<void> {
       continue;
     }
 
-    if (
-      newSelector &&
-      isUnsafeReplacement(original, newSelector, failureLine)
-    ) {
-      logApply("skip", {
-        reason: "unsafe replacement — selector used on assertion line elsewhere",
-        newSelector,
-        failureLine,
-      });
-      continue;
-    }
+    const original = fs.readFileSync(fullPath, "utf8");
 
-    let updated: string | null = tryDeterministicLocatorFix({
-      original,
-      category: item.category,
+    logApply("llm apply", {
+      file: relativePath,
       proposedChangeSummary: item.proposedChangeSummary,
-      hint,
-      failureLine,
     });
-    let applyMethod: "deterministic" | "llm" = "deterministic";
 
-    if (
-      !updated &&
-      failureLine &&
-      newSelector &&
-      currentOnLine &&
-      !selectorsEquivalent(currentOnLine, newSelector)
-    ) {
-      updated = replaceSelectorInSource(
-        original,
-        currentOnLine,
-        newSelector,
-        failureLine,
-      );
-      if (updated) {
-        logApply("deterministic line fix", {
-          file: `${relativePath}:${failureLine}`,
-          from: currentOnLine,
-          to: newSelector,
-        });
-      }
-    } else if (updated) {
-      logApply("deterministic selector fix", {
-        file: relativePath,
-        from: oldSelector,
-        to: newSelector,
-      });
-    }
-
-    if (!updated) {
-      applyMethod = "llm";
-      logApply("llm fallback", {
-        file: relativePath,
-        brokenSelector: oldSelector,
-        replacementSelector: newSelector,
+    const system =
+      "You are an expert Playwright + TypeScript test engineer. Return ONLY the full updated file content. No markdown fences.";
+    const user = JSON.stringify(
+      {
+        task: "Apply ONE minimal fix from the fix plan. Change only what the hint describes; do not rewrite unrelated lines.",
+        testName: item.testName,
+        category: item.category,
         proposedChangeSummary: item.proposedChangeSummary,
-      });
-      const system =
-        "You are an expert Playwright + TypeScript test engineer. Return ONLY the full updated file content. No markdown fences.";
-      const user = JSON.stringify(
-        {
-          task: "Apply ONE minimal locator fix. Change only the broken selector; do not rewrite unrelated lines.",
-          testName: item.testName,
-          category: item.category,
-          proposedChangeSummary: item.proposedChangeSummary,
-          brokenSelector: oldSelector,
-          replacementSelector: newSelector,
-          hint,
-          filePath: relativePath,
-          rules: [
-            "Replace ONLY occurrences of brokenSelector with replacementSelector.",
-            "Do NOT substitute a different element from later steps in the same method.",
-            "Keep imports, method order, and all other selectors unchanged.",
-            SELECTOR_QUOTE_RULES,
-          ],
-          currentFileContent: original,
-        },
-        null,
-        2,
-      );
-      const result = await chatText(system, user, {
-        label: `apply-fix-${item.testId.slice(0, 8)}`,
-        meta: { type: "apply-fix", testName: item.testName, filePath: relativePath },
-      });
-      updated = result.content;
-    }
+        hint,
+        failureLocation: failure?.failureLocation,
+        filePath: relativePath,
+        rules: [
+          "Apply the change described in hint.suggestedSelectorOrChange.",
+          "Do NOT substitute a different element from later steps in the same method.",
+          "Keep imports, method order, and all other code unchanged unless the hint requires it.",
+        ],
+        currentFileContent: original,
+      },
+      null,
+      2,
+    );
+    const result = await chatText(system, user, {
+      label: `apply-fix-${item.testId.slice(0, 8)}`,
+      meta: { type: "apply-fix", testName: item.testName, filePath: relativePath },
+    });
+    const updated = result.content;
 
     if (!updated || updated.trim() === original.trim()) {
       logApply("skip", { reason: "no effective change after apply attempt", file: relativePath });
@@ -559,10 +384,7 @@ async function main(): Promise<void> {
       testName: item.testName,
       category: item.category,
       filePath: relativePath,
-      applyMethod,
-      oldSelector,
-      newSelector,
-      selectorOnLineBefore: currentOnLine,
+      applyMethod: "llm" as const,
       proposedChangeSummary: item.proposedChangeSummary,
       planFromFile: rawItem.proposedChangeSummary,
       at: new Date().toISOString(),
@@ -571,18 +393,18 @@ async function main(): Promise<void> {
     if (mode === "dry-run") {
       logApply("dry-run would write", {
         file: relativePath,
-        method: applyMethod,
+        method: "llm",
         chars: `${original.length} → ${updated.length}`,
       });
-      audit.push({ ...entry, action: "dry-run" });
-      touched.add(relativePath);
+      audit.push({ ...entry, action: "dry-run", applyTarget: applyTargetKey });
+      touched.add(applyTargetKey);
       continue;
     }
 
     fs.writeFileSync(fullPath, updated, "utf8");
-    logApply("applied", { file: relativePath, method: applyMethod });
-    audit.push({ ...entry, action: "applied" });
-    touched.add(relativePath);
+    logApply("applied", { file: relativePath, method: "llm", applyTarget: applyTargetKey });
+    audit.push({ ...entry, action: "applied", applyTarget: applyTargetKey });
+    touched.add(applyTargetKey);
   }
 
   if (audit.length > 0) {

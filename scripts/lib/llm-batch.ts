@@ -13,8 +13,6 @@ import {
   mergeApiUsage,
   type TokenCallRecord,
 } from "./token-estimate";
-import { SELECTOR_QUOTE_RULES } from "./selector-quotes";
-
 export type StandardsContext = {
   uiStandards: string;
   evaluationCriteria: string;
@@ -44,8 +42,7 @@ Rules:
 - pageEvidence carries CSS class names/rules and a rendered DOM excerpt from page-html / page-css attachments captured at failure — prefer these over guessing when the a11y snapshot lacks CSS classes.
 - If pageEvidence.closestClassMatch is present, use it as the primary selector fix (typo near-miss, e.g. .carts_item → .cart_item).
 - If callLog contains "waiting for locator(...)" or errorContextMd shows a bad selector / page snapshot mismatch, classify as locators-broken — NOT timing-flaky — even when Summary says "Test timeout exceeded".
-- Compare selectors in the failing line vs other lines in errorContextMd test source (e.g. #pwd vs #password).
-- ${SELECTOR_QUOTE_RULES}`;
+- Compare selectors in the failing line vs other lines in errorContextMd test source (e.g. #pwd vs #password).`;
 
 export const TRIAGE_SYSTEM = `You are an expert Playwright test triage analyst.
 Return ONLY valid JSON (no markdown fences) with this exact shape:
