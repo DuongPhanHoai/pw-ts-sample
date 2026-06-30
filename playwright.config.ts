@@ -17,7 +17,7 @@ if (!process.env.__PW_BANNER_PRINTED) {
 
 export default defineConfig({
   testDir: "tests",
-  timeout: 30_000,
+  timeout: 10_000,
   retries: 0,
   workers: process.env.CI ? 2 : 4,
   reporter: [
