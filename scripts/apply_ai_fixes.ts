@@ -10,32 +10,6 @@ type AutoFixMode = "false" | "dry-run" | "true";
 
 const FixPlanSchema = z.object({
   failureSnapshots: z.record(z.string(), z.unknown()).optional(),
-  planLlm: z
-    .array(
-      z.object({
-        testId: z.string(),
-        testName: z.string(),
-        category: z.enum([
-          "locators-broken",
-          "timing-flaky",
-          "backend-issue",
-          "business-logic-change",
-          "test-data-issue",
-        ]),
-        canAutoHeal: z.boolean(),
-        confidence: z.number().min(0).max(1).optional(),
-        proposedChangeSummary: z.string(),
-        groupId: z.string().optional(),
-        codeChangeHints: z.array(
-          z.object({
-            filePath: z.string(),
-            reason: z.string(),
-            suggestedSelectorOrChange: z.string(),
-          }),
-        ),
-      }),
-    )
-    .optional(),
   plan: z.array(
     z.object({
       testId: z.string(),
@@ -177,15 +151,6 @@ function mergeFailure(live?: FailedTest, snap?: FailedTest): FailedTest | undefi
   };
 }
 
-function pickApplyPlanItem(
-  rawItem: PlanItem,
-  planLlmByTest: Map<string, PlanItem>,
-  planLlmByFile: Map<string, PlanItem>,
-  relativePath: string,
-): PlanItem {
-  return planLlmByTest.get(rawItem.testName) ?? planLlmByFile.get(relativePath) ?? rawItem;
-}
-
 async function main(): Promise<void> {
   const mode = getAutoFixMode();
   console.log(`AUTO_FIX_TESTS=${mode}`);
@@ -206,11 +171,6 @@ async function main(): Promise<void> {
   const fixPlanRaw = JSON.parse(fs.readFileSync(paths.aiFixPlan, "utf8"));
   const fixPlan = FixPlanSchema.parse(fixPlanRaw);
   const snapshots = fixPlan.failureSnapshots ?? {};
-  const planLlmItems = fixPlan.planLlm ?? [];
-  const planLlmByTest = new Map(planLlmItems.map((p) => [p.testName, p]));
-  const planLlmByFile = new Map(
-    planLlmItems.map((p) => [normalizeRelativePath(p.codeChangeHints[0]?.filePath ?? ""), p]),
-  );
 
   const failuresByTestName = new Map<string, FailedTest>();
   if (fs.existsSync(paths.resultsJson)) {
@@ -254,26 +214,16 @@ async function main(): Promise<void> {
   const touched = new Set<string>();
   const audit: unknown[] = [];
 
-  for (const rawItem of uniqueCandidates) {
+  for (const item of uniqueCandidates) {
     if (touched.size >= maxFiles) break;
 
-    const applyTargetKey = resolveApplyTargetKey(rawItem, failuresByTestName, snapshots);
+    const applyTargetKey = resolveApplyTargetKey(item, failuresByTestName, snapshots);
     if (!applyTargetKey) continue;
 
-    const relativePathEarly = normalizeRelativePath(rawItem.codeChangeHints[0].filePath);
-    const sourceItem = pickApplyPlanItem(
-      rawItem,
-      planLlmByTest,
-      planLlmByFile,
-      relativePathEarly,
-    );
-
     const failure = mergeFailure(
-      failuresByTestName.get(sourceItem.testName) ??
-        failuresByTestName.get(rawItem.testName),
-      asFailedTest(snapshots[sourceItem.testName] ?? snapshots[rawItem.testName]),
+      failuresByTestName.get(item.testName),
+      asFailedTest(snapshots[item.testName]),
     );
-    const item = sourceItem;
     const hint = item.codeChangeHints[0];
     const relativePath = normalizeRelativePath(hint.filePath);
 
@@ -283,13 +233,11 @@ async function main(): Promise<void> {
       file: relativePath,
       category: item.category,
       confidence: item.confidence,
-      planSource: sourceItem !== rawItem ? "planLlm" : "plan",
-      planFromFile: rawItem.proposedChangeSummary,
-      planUsed: item.proposedChangeSummary,
+      proposedChangeSummary: item.proposedChangeSummary,
       hintReason: hint.reason,
       hintSuggested: hint.suggestedSelectorOrChange,
       failureSource: failure
-        ? failuresByTestName.has(sourceItem.testName)
+        ? failuresByTestName.has(item.testName)
           ? "results.json+snapshot"
           : "ai-fix-plan.failureSnapshots"
         : "none",
@@ -365,7 +313,6 @@ async function main(): Promise<void> {
       filePath: relativePath,
       applyMethod: "llm" as const,
       proposedChangeSummary: item.proposedChangeSummary,
-      planFromFile: rawItem.proposedChangeSummary,
       at: new Date().toISOString(),
     };
 

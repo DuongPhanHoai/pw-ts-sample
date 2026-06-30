@@ -169,7 +169,6 @@ async function main(): Promise<void> {
   }
 
   let fixPlan: FixPlanItem[] = [];
-  let fixPlanLlm: FixPlanItem[] = [];
   let aiAnalysis = "";
   let aiSummary = "";
   let triageResult: FailureTriageResult | undefined;
@@ -206,7 +205,7 @@ Confirm success and note no fixes are needed.`;
     fs.writeFileSync(paths.aiTriage, JSON.stringify(triageResult, null, 2), "utf8");
 
     console.log(`  Step 2: fix plan for ${triageResult.groups.length} group(s)…`);
-    let fixPlanResult: { plan: FixPlanItem[]; planLlm: FixPlanItem[] };
+    let fixPlanResult: FixPlanItem[];
     try {
       fixPlanResult = await buildFixPlanFromTriage(
         ctx,
@@ -220,10 +219,9 @@ Confirm success and note no fixes are needed.`;
           : undefined;
       abortAnalyze("fix-plan", err, { triageGroupCount: triageResult.groups.length, ...extra });
     }
-    fixPlan = fixPlanResult.plan;
-    fixPlanLlm = fixPlanResult.planLlm;
+    fixPlan = fixPlanResult;
 
-    const execPlanPayload = fixPlanLlm.map((p) => ({
+    const execPlanPayload = fixPlan.map((p) => ({
       groupId: p.groupId,
       representativeTestName: p.testName,
       appliesToCount: p.appliesToCount ?? p.memberTestNames?.length ?? 1,
@@ -292,7 +290,6 @@ Mode: two-phase (triage → selective detail fix plan)
           mode: "two-phase",
           triage: triageResult,
           failureSnapshots: buildRepresentativeFailureSnapshots(triageResult, failuresToAnalyze),
-          planLlm: fixPlanLlm,
           plan: fixPlan,
         },
         null,
@@ -334,10 +331,9 @@ async function buildFixPlanFromTriage(
   ctx: StandardsContext,
   triage: FailureTriageResult,
   allFailures: FailedTest[],
-): Promise<{ plan: FixPlanItem[]; planLlm: FixPlanItem[] }> {
+): Promise<FixPlanItem[]> {
   const resolvedGroups = resolveTriageGroups(triage, allFailures);
   const merged: FixPlanItem[] = [];
-  const mergedLlm: FixPlanItem[] = [];
 
   for (let i = 0; i < resolvedGroups.length; i++) {
     const { group, representative, members } = resolvedGroups[i];
@@ -369,27 +365,15 @@ async function buildFixPlanFromTriage(
         );
       }
 
-      const llmItem = planItem;
-      const item = planItem;
-
       const memberNames = members.map((m) => m.testName);
       merged.push({
-        ...item,
+        ...planItem,
         testId: representative.testId,
         testName: representative.testName,
         groupId: group.groupId,
         memberTestNames: memberNames,
         appliesToCount: memberNames.length,
-        rootCauseSummary: item.rootCauseSummary ?? group.triageSummary,
-      });
-      mergedLlm.push({
-        ...llmItem,
-        testId: representative.testId,
-        testName: representative.testName,
-        groupId: group.groupId,
-        memberTestNames: memberNames,
-        appliesToCount: memberNames.length,
-        rootCauseSummary: llmItem.rootCauseSummary ?? group.triageSummary,
+        rootCauseSummary: planItem.rootCauseSummary ?? group.triageSummary,
       });
     } catch (err) {
       if (err instanceof FixPlanGroupError) throw err;
@@ -405,7 +389,7 @@ async function buildFixPlanFromTriage(
     }
   }
 
-  return { plan: merged, planLlm: mergedLlm };
+  return merged;
 }
 
 class FixPlanGroupError extends Error {
