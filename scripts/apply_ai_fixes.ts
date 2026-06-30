@@ -96,10 +96,6 @@ function isAllowedPath(relativePath: string, allowedPrefixes?: string[]): boolea
   );
 }
 
-function isStaleHint(hintText: string): boolean {
-  return /toHaveCount\s*\(/.test(hintText);
-}
-
 type PlanItem = z.infer<typeof FixPlanSchema>["plan"][number];
 
 function resolveFailureLine(
@@ -181,22 +177,13 @@ function mergeFailure(live?: FailedTest, snap?: FailedTest): FailedTest | undefi
   };
 }
 
-function isStalePlanItem(item: PlanItem): boolean {
-  const hint = item.codeChangeHints[0]?.suggestedSelectorOrChange ?? "";
-  return isStaleHint(hint) || /\.summary_info/.test(item.proposedChangeSummary);
-}
-
 function pickApplyPlanItem(
   rawItem: PlanItem,
   planLlmByTest: Map<string, PlanItem>,
   planLlmByFile: Map<string, PlanItem>,
   relativePath: string,
 ): PlanItem {
-  const llmItem = planLlmByTest.get(rawItem.testName) ?? planLlmByFile.get(relativePath);
-  if (llmItem && isStalePlanItem(rawItem)) {
-    return llmItem;
-  }
-  return llmItem && !isStalePlanItem(llmItem) ? llmItem : rawItem;
+  return planLlmByTest.get(rawItem.testName) ?? planLlmByFile.get(relativePath) ?? rawItem;
 }
 
 async function main(): Promise<void> {
@@ -327,14 +314,6 @@ async function main(): Promise<void> {
     const fullPath = path.join(projectRoot, relativePath);
     if (!fs.existsSync(fullPath)) {
       console.warn(`File not found: ${fullPath}`);
-      continue;
-    }
-
-    if (isStalePlanItem(item)) {
-      logApply("skip", {
-        reason: "stale fix plan hint — re-run: npx playwright test && npm run analyze:results",
-        file: relativePath,
-      });
       continue;
     }
 
