@@ -18,7 +18,7 @@ import {
   requestFixPlanForGroup,
   type StandardsContext,
 } from "./lib/llm-batch";
-import { applyDeterministicClassification, classifyFailure } from "./lib/failure-classifier";
+import { applyDeterministicClassification } from "./lib/failure-classifier";
 import { getFailureLimit, shouldLogLlmToConsole } from "./lib/llm-log";
 import { loadTestRun, type FailedTest } from "./lib/playwright-results";
 import { paths, projectRoot } from "./lib/paths";
@@ -91,6 +91,29 @@ const FixPlanSchema = z.object({
   plan: z.array(FixPlanItemSchema),
 });
 
+type FixPlanBuildError = {
+  groupId: string;
+  representativeTestName: string;
+  memberCount: number;
+  stage: "fix-plan-llm";
+  reason: "llm_request_failed" | "invalid_json" | "schema_validation" | "empty_plan";
+  message: string;
+  rawResponsePreview?: string;
+};
+
+function errMessage(err: unknown): string {
+  if (err instanceof z.ZodError) {
+    return err.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
+  }
+  return err instanceof Error ? err.message : String(err);
+}
+
+function classifyFixPlanError(err: unknown): FixPlanBuildError["reason"] {
+  if (err instanceof z.ZodError) return "schema_validation";
+  if (err instanceof SyntaxError) return "invalid_json";
+  return "llm_request_failed";
+}
+
 async function main(): Promise<void> {
   fs.mkdirSync(path.dirname(paths.resultsJson), { recursive: true });
 
@@ -118,6 +141,7 @@ async function main(): Promise<void> {
 
   let fixPlan: FixPlanItem[] = [];
   let fixPlanLlm: FixPlanItem[] = [];
+  let fixPlanErrors: FixPlanBuildError[] = [];
   let aiAnalysis = "";
   let aiSummary = "";
   let triageResult: FailureTriageResult | undefined;
@@ -164,6 +188,17 @@ Confirm success and note no fixes are needed.`;
     );
     fixPlan = fixPlanResult.plan;
     fixPlanLlm = fixPlanResult.planLlm;
+    fixPlanErrors = fixPlanResult.errors;
+
+    writeFixPlanErrors(fixPlanErrors, triageResult.groups.length);
+
+    if (fixPlanErrors.length > 0) {
+      console.error(
+        `\nFix plan incomplete: ${fixPlanErrors.length} group(s) failed LLM fix-plan ` +
+          `(expected ${triageResult.groups.length}, got ${fixPlan.length}). ` +
+          `See ${paths.fixPlanErrors}`,
+      );
+    }
 
     const execPlanPayload = fixPlanLlm.map((p) => ({
       groupId: p.groupId,
@@ -248,6 +283,7 @@ ${tokenBlock}
           triage: triageResult,
           tokenSummary: tokenTracker.summary(),
           failureSnapshots: buildRepresentativeFailureSnapshots(triageResult, failuresToAnalyze),
+          fixPlanErrors,
           planLlm: fixPlanLlm,
           plan: fixPlan,
         },
@@ -265,9 +301,15 @@ ${tokenBlock}
     console.log(`Wrote ${paths.aiAnalysis}`);
     console.log(`Wrote ${paths.aiTriage}`);
     console.log(`Fix plan: ${fixPlan.length} group(s) covering ${failuresToAnalyze.length} failure(s)`);
+    if (fixPlanErrors.length > 0) {
+      console.error(`Fix plan errors: ${fixPlanErrors.length} — ${paths.fixPlanErrors}`);
+    }
     console.log(`Wrote ${paths.aiFixPlan}`);
     console.log(`Wrote ${tokenReportPath}`);
     console.log(formatTokenSummary(tokenTracker.summary()));
+    if (fixPlanErrors.length > 0) {
+      process.exit(1);
+    }
   }
 }
 
@@ -300,58 +342,67 @@ async function buildFixPlanFromTriage(
   triage: FailureTriageResult,
   allFailures: FailedTest[],
   tokenTracker: TokenTracker,
-): Promise<{ plan: FixPlanItem[]; planLlm: FixPlanItem[] }> {
+): Promise<{ plan: FixPlanItem[]; planLlm: FixPlanItem[]; errors: FixPlanBuildError[] }> {
   const resolvedGroups = resolveTriageGroups(triage, allFailures);
   const merged: FixPlanItem[] = [];
   const mergedLlm: FixPlanItem[] = [];
+  const errors: FixPlanBuildError[] = [];
 
   for (let i = 0; i < resolvedGroups.length; i++) {
     const { group, representative, members } = resolvedGroups[i];
     const label = `${group.groupId} (${members.length} test(s))`;
     console.log(`    Fix plan ${i + 1}/${resolvedGroups.length}: ${label}…`);
 
-    let item: FixPlanItem | null = null;
-    let llmItem: FixPlanItem | null = null;
+    let raw: string | undefined;
 
     try {
-      const { raw, tokenRecord } = await requestFixPlanForGroup(
+      const result = await requestFixPlanForGroup(
         ctx,
         group,
         representative,
         `fix-plan-${group.groupId}`,
       );
-      tokenTracker.record(tokenRecord);
+      tokenTracker.record(result.tokenRecord);
+      raw = result.raw;
+
       const parsed = FixPlanSchema.parse(JSON.parse(raw));
       const planItem = parsed.plan[0];
-      if (planItem) {
-        llmItem = planItem;
-        item = applyDeterministicClassification(planItem, representative);
-        if (item.proposedChangeSummary !== planItem.proposedChangeSummary) {
-          console.warn(
-            `    Classifier adjusted LLM fix (group ${group.groupId}):\n` +
-              `      LLM:         ${planItem.proposedChangeSummary}\n` +
-              `      Classifier:  ${item.proposedChangeSummary}`,
-          );
-        }
+
+      if (!planItem) {
+        const entry: FixPlanBuildError = {
+          groupId: group.groupId,
+          representativeTestName: representative.testName,
+          memberCount: members.length,
+          stage: "fix-plan-llm",
+          reason: "empty_plan",
+          message: "LLM returned valid JSON but plan[0] is missing or empty",
+          rawResponsePreview: raw.slice(0, 2000),
+        };
+        errors.push(entry);
+        console.error(`    Fix plan FAILED for ${group.groupId}: ${entry.message}`);
+        continue;
       }
-    } catch (err) {
-      console.warn(`    Fix plan failed for ${group.groupId}, using heuristic:`, err);
-      item = buildHeuristicFixPlanItem(representative);
-    }
 
-    if (!item) continue;
+      const llmItem = planItem;
+      const item = applyDeterministicClassification(planItem, representative);
+      if (item.proposedChangeSummary !== planItem.proposedChangeSummary) {
+        console.warn(
+          `    Classifier adjusted LLM fix (group ${group.groupId}):\n` +
+            `      LLM:         ${planItem.proposedChangeSummary}\n` +
+            `      Classifier:  ${item.proposedChangeSummary}`,
+        );
+      }
 
-    const memberNames = members.map((m) => m.testName);
-    merged.push({
-      ...item,
-      testId: representative.testId,
-      testName: representative.testName,
-      groupId: group.groupId,
-      memberTestNames: memberNames,
-      appliesToCount: memberNames.length,
-      rootCauseSummary: item.rootCauseSummary ?? group.triageSummary,
-    });
-    if (llmItem) {
+      const memberNames = members.map((m) => m.testName);
+      merged.push({
+        ...item,
+        testId: representative.testId,
+        testName: representative.testName,
+        groupId: group.groupId,
+        memberTestNames: memberNames,
+        appliesToCount: memberNames.length,
+        rootCauseSummary: item.rootCauseSummary ?? group.triageSummary,
+      });
       mergedLlm.push({
         ...llmItem,
         testId: representative.testId,
@@ -361,10 +412,41 @@ async function buildFixPlanFromTriage(
         appliesToCount: memberNames.length,
         rootCauseSummary: llmItem.rootCauseSummary ?? group.triageSummary,
       });
+    } catch (err) {
+      const entry: FixPlanBuildError = {
+        groupId: group.groupId,
+        representativeTestName: representative.testName,
+        memberCount: members.length,
+        stage: "fix-plan-llm",
+        reason: classifyFixPlanError(err),
+        message: errMessage(err),
+        rawResponsePreview: raw?.slice(0, 2000),
+      };
+      errors.push(entry);
+      console.error(`    Fix plan FAILED for ${group.groupId}: ${entry.message}`);
     }
   }
 
-  return { plan: merged, planLlm: mergedLlm };
+  return { plan: merged, planLlm: mergedLlm, errors };
+}
+
+function writeFixPlanErrors(errors: FixPlanBuildError[], expectedGroups: number): void {
+  fs.mkdirSync(path.dirname(paths.fixPlanErrors), { recursive: true });
+  fs.writeFileSync(
+    paths.fixPlanErrors,
+    JSON.stringify(
+      {
+        generatedAt: new Date().toISOString(),
+        expectedGroups,
+        successCount: expectedGroups - errors.length,
+        failureCount: errors.length,
+        errors,
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
 }
 
 function snapshotFailure(f: FailedTest) {
@@ -391,55 +473,6 @@ function buildRepresentativeFailureSnapshots(
     if (rep) out[rep.testName] = snapshotFailure(rep);
   }
   return out;
-}
-
-function buildHeuristicFixPlanItem(failure: FailedTest): FixPlanItem {
-  const detected = classifyFailure(failure);
-  if (detected) {
-    return {
-      testId: failure.testId,
-      testName: failure.testName,
-      category: detected.category,
-      canAutoHeal: true,
-      confidence: detected.confidence,
-      rootCauseSummary: detected.rootCauseSummary,
-      proposedChangeSummary: detected.proposedChangeSummary,
-      codeChangeHints: detected.codeChangeHints,
-    };
-  }
-
-  const err = failure.error.toLowerCase();
-  let category: FixPlanItem["category"] = "backend-issue";
-  let canAutoHeal = false;
-
-  if (err.includes("timeout") || err.includes("waiting")) {
-    category = "timing-flaky";
-    canAutoHeal = true;
-  } else if (err.includes("expect") || err.includes("assertion")) {
-    category = "business-logic-change";
-  }
-
-  const rootLine =
-    failure.errorSummary ?? failure.error.split("\n")[0] ?? failure.error;
-  const loc = failure.failureLocation;
-  const fileHint = loc?.file ?? failure.file ?? "tests/";
-
-  return {
-    testId: failure.testId,
-    testName: failure.testName,
-    category,
-    canAutoHeal,
-    confidence: 0.5,
-    rootCauseSummary: rootLine.slice(0, 300),
-    proposedChangeSummary: `Review ${fileHint} — inspect error-context and update page object or assertion.`,
-    codeChangeHints: [
-      {
-        filePath: fileHint,
-        reason: "Primary test or page object for this failure",
-        suggestedSelectorOrChange: "See Playwright error-context.md",
-      },
-    ],
-  };
 }
 
 function buildTwoPhaseAnalysisMarkdown(
@@ -474,7 +507,7 @@ function buildTwoPhaseAnalysisMarkdown(
         }
       }
     } else {
-      lines.push("- **Fix:** (no plan generated for representative)");
+      lines.push("- **Fix:** (LLM fix-plan failed — see reports/fix-plan-errors.json)");
     }
     lines.push("");
   }

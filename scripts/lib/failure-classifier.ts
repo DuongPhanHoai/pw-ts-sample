@@ -67,8 +67,6 @@ function findAlternateSelectors(
   return [...selectors];
 }
 
-import { formatClickSnippet } from "./selector-quotes";
-
 export function classifyFailure(failure: FailedTest): FailureClassification | undefined {
   const badSelector = extractWaitingLocatorSelector(failure);
   if (!badSelector) return undefined;

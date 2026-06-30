@@ -19,4 +19,5 @@ export const paths = {
   ),
   autoHealPolicy: path.join(projectRoot, "testing-standards", "auto-heal-policy.json"),
   fixAudit: path.join(projectRoot, "reports", "auto-fix-audit.json"),
+  fixPlanErrors: path.join(projectRoot, "reports", "fix-plan-errors.json"),
 };
