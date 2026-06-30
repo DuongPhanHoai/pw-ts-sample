@@ -107,7 +107,9 @@ Optional:
 
 | Variable | Values |
 |----------|--------|
-| `AUTO_FIX_TESTS` | `false` (default), `dry-run`, `true` |
+| `AUTO_FIX_TESTS` | `false` (default), `dry-run`, `true` — when `true`, workflow opens a **pull request** with changes under `tests/` |
+
+**GitHub CLI (`gh`)** on the runner machine is required for the PR step (install: https://cli.github.com/). `GITHUB_TOKEN` permissions are set in the workflow (`contents: write`, `pull-requests: write`).
 
 **Secrets** (optional): `LMSTUDIO_API_KEY` — LM Studio usually accepts any placeholder (`lm-studio`).
 
@@ -144,6 +146,7 @@ Push to branch `main`, `saucedemo`, or `saucedemo-ai` (see workflow `on:` trigge
 |----------|------|
 | **GitHub → Actions → run → Artifacts → `reports`** | After self-hosted job completes (download zip) |
 | `ai-test-report.md` inside that zip | Main AI summary (pass/fail, tests to fix) |
+| **Pull Requests** tab | When `AUTO_FIX_TESTS=true`, branch `ai-fix/run-<id>` → PR **fix(tests): AI auto-heal** |
 | `C:\actions-runner\pw-ts-sample\_work\...\reports\` | During/just after job (runner checkout; cleaned between runs) |
 | `D:\Testing\pw-ts-sample\reports\` | **Only** if you run `npm run pipeline:local` locally — **not** from `run.cmd` alone |
 
