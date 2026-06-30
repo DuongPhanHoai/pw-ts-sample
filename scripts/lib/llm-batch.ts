@@ -8,11 +8,7 @@ import {
   type FailureTriageResult,
 } from "./failure-triage";
 import { chatJson, chatText } from "./llm";
-import {
-  estimateTokens,
-  mergeApiUsage,
-  type TokenCallRecord,
-} from "./token-estimate";
+
 export type StandardsContext = {
   uiStandards: string;
   evaluationCriteria: string;
@@ -92,11 +88,6 @@ export function getMaxErrorChars(): number {
   const n = Number(process.env.LMSTUDIO_MAX_ERROR_CHARS ?? 2000);
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : 2000;
 }
-
-/** Typical JSON fix-plan response size per test. */
-const ESTIMATED_OUTPUT_TOKENS_FIX_PLAN = 350;
-const ESTIMATED_OUTPUT_TOKENS_ANALYSIS = 450;
-const ESTIMATED_OUTPUT_TOKENS_EXEC_SUMMARY = 200;
 
 export function chunk<T>(items: T[], size: number): T[][] {
   const out: T[][] = [];
@@ -217,98 +208,21 @@ ${JSON.stringify(detailPayload, null, 2)}
 Return exactly one fix plan entry for representativeTestName. The fix applies to all memberTestNames.`;
 }
 
-export function estimateTriageInputTokens(
-  ctx: StandardsContext,
-  failures: FailedTest[],
-  stats: { passed: number; failed: number; skipped: number },
-): number {
-  return estimateTokens(`${TRIAGE_SYSTEM}\n\n${buildTriageUserPrompt(ctx, failures, stats)}`);
-}
-
-export function estimateFixPlanDetailInputTokens(
-  ctx: StandardsContext,
-  group: FailureTriageGroup,
-  representative: FailedTest,
-): number {
-  return estimateTokens(
-    `${FIX_PLAN_DETAIL_SYSTEM}\n\n${buildFixPlanDetailUserPrompt(ctx, group, representative)}`,
-  );
-}
-
-export function estimateTwoPhaseInputTokens(
-  ctx: StandardsContext,
-  failures: FailedTest[],
-  stats: { passed: number; failed: number; skipped: number },
-  estimatedGroupCount = Math.max(1, Math.ceil(failures.length / 3)),
-): {
-  triageInputTokens: number;
-  fixPlanInputTokens: number;
-  executiveSummaryInputTokens: number;
-  totalInputTokens: number;
-  estimatedOutputTokens: number;
-  estimatedTotalTokens: number;
-  estimatedGroupCount: number;
-} {
-  const triageInputTokens = estimateTriageInputTokens(ctx, failures, stats);
-  let fixPlanInputTokens = 0;
-
-  for (let i = 0; i < estimatedGroupCount; i++) {
-    const rep = failures[i] ?? failures[0];
-    if (!rep) break;
-    fixPlanInputTokens += estimateFixPlanDetailInputTokens(ctx, {
-      groupId: `estimate-${i}`,
-      representativeTestName: rep.testName,
-      memberTestNames: [rep.testName],
-      triageSummary: "estimate",
-      detailFieldsNeeded: ["pageEvidence", "errorContextMd"],
-    }, rep);
-  }
-
-  const executiveSummaryInputTokens = estimateTokens(
-    "executive summary ~" + failures.length * 300,
-  );
-  const estimatedOutputTokens =
-    500 + estimatedGroupCount * ESTIMATED_OUTPUT_TOKENS_FIX_PLAN + ESTIMATED_OUTPUT_TOKENS_EXEC_SUMMARY;
-  const totalInputTokens = triageInputTokens + fixPlanInputTokens + executiveSummaryInputTokens;
-
-  return {
-    triageInputTokens,
-    fixPlanInputTokens,
-    executiveSummaryInputTokens,
-    totalInputTokens,
-    estimatedOutputTokens,
-    estimatedTotalTokens: totalInputTokens + estimatedOutputTokens,
-    estimatedGroupCount,
-  };
-}
-
 export async function requestFailureTriage(
   ctx: StandardsContext,
   failures: FailedTest[],
   stats: { passed: number; failed: number; skipped: number },
-): Promise<{ triage: FailureTriageResult; tokenRecord: TokenCallRecord }> {
+): Promise<FailureTriageResult> {
   const user = buildTriageUserPrompt(ctx, failures, stats);
-  const estimatedInputTokens = estimateTriageInputTokens(ctx, failures, stats);
   const result = await chatJson(TRIAGE_SYSTEM, user, {
     label: "failure-triage",
     meta: {
       type: "failure-triage",
       failureCount: failures.length,
-      estimatedInputTokens,
     },
   });
 
-  const parsed = JSON.parse(result.content) as FailureTriageResult;
-  return {
-    triage: parsed,
-    tokenRecord: {
-      label: "failure-triage",
-      type: "failure-triage",
-      estimatedInputTokens,
-      estimatedOutputTokens: 500,
-      ...mergeApiUsage(estimatedInputTokens, result.usage),
-    },
-  };
+  return JSON.parse(result.content) as FailureTriageResult;
 }
 
 export async function requestFixPlanForGroup(
@@ -316,9 +230,8 @@ export async function requestFixPlanForGroup(
   group: FailureTriageGroup,
   representative: FailedTest,
   logLabel = "fix-plan-group",
-): Promise<{ raw: string; tokenRecord: TokenCallRecord }> {
+): Promise<string> {
   const user = buildFixPlanDetailUserPrompt(ctx, group, representative);
-  const estimatedInputTokens = estimateFixPlanDetailInputTokens(ctx, group, representative);
   const result = await chatJson(FIX_PLAN_DETAIL_SYSTEM, user, {
     label: logLabel,
     meta: {
@@ -327,20 +240,9 @@ export async function requestFixPlanForGroup(
       representative: group.representativeTestName,
       memberCount: group.memberTestNames.length,
       detailFields: group.detailFieldsNeeded,
-      estimatedInputTokens,
     },
   });
-  return {
-    raw: result.content,
-    tokenRecord: {
-      label: logLabel,
-      type: "fix-plan",
-      testName: group.representativeTestName,
-      estimatedInputTokens,
-      estimatedOutputTokens: ESTIMATED_OUTPUT_TOKENS_FIX_PLAN,
-      ...mergeApiUsage(estimatedInputTokens, result.usage),
-    },
-  };
+  return result.content;
 }
 
 export function buildPlanUserPrompt(ctx: StandardsContext, failures: FailedTest[]): string {
@@ -375,113 +277,21 @@ Write markdown for ${perTest ? "this test" : "this batch"}:
 - Be specific (selectors, files under tests/, waits, data)`;
 }
 
-function fixPlanInputText(system: string, user: string): string {
-  return `${system}\n\nReturn ONLY valid JSON. No markdown fences, no commentary.\n\n${user}`;
-}
-
-export function estimateFixPlanInputTokens(ctx: StandardsContext, failures: FailedTest[]): number {
-  return estimateTokens(fixPlanInputText(FIX_PLAN_SYSTEM, buildPlanUserPrompt(ctx, failures)));
-}
-
-export function estimateAnalysisInputTokens(
-  ctx: StandardsContext,
-  failures: FailedTest[],
-  testLabel: string,
-  stats: { passed: number; failed: number; skipped: number },
-): number {
-  const system = "You are an expert test result analyst. Write sharp, actionable markdown for engineers.";
-  return estimateTokens(`${system}\n\n${buildAnalysisUserPrompt(ctx, failures, testLabel, stats)}`);
-}
-
-export function estimateRunInputTokens(
-  ctx: StandardsContext,
-  failures: FailedTest[],
-  stats: { passed: number; failed: number; skipped: number },
-): {
-  fixPlanInputTokens: number;
-  analysisInputTokens: number;
-  executiveSummaryInputTokens: number;
-  totalInputTokens: number;
-  estimatedOutputTokens: number;
-  estimatedTotalTokens: number;
-  perTestCalls: number;
-  batchSize: number;
-} {
-  const batchSize = getBatchSize();
-  const batches = chunk(failures, batchSize);
-  let fixPlanInputTokens = 0;
-  let analysisInputTokens = 0;
-
-  for (let i = 0; i < batches.length; i++) {
-    const batch = batches[i];
-    fixPlanInputTokens += estimateFixPlanInputTokens(ctx, batch);
-    const label =
-      batchSize === 1
-        ? `${i + 1}/${failures.length} — ${batch[0]?.testName ?? "unknown"}`
-        : `${i + 1}/${batches.length} (${batch.length} tests)`;
-    analysisInputTokens += estimateAnalysisInputTokens(ctx, batch, label, stats);
-  }
-
-  const executiveSummaryInputTokens = estimateTokens(
-    "You are a QA lead. Write a concise executive summary in 4-6 sentences.\n\n[fix plan JSON ~" +
-      failures.length * 400 +
-      " chars]",
-  );
-
-  const synthesisInputTokens =
-    batches.length > 1 && batchSize > 1
-      ? estimateTokens("[synthesis of " + batches.length + " batch sections]")
-      : 0;
-
-  const perTestCalls = batches.length * 2;
-  const extraCalls = 1 + (synthesisInputTokens > 0 ? 1 : 0);
-  const estimatedOutputTokens =
-    batches.length * (ESTIMATED_OUTPUT_TOKENS_FIX_PLAN + ESTIMATED_OUTPUT_TOKENS_ANALYSIS) +
-    ESTIMATED_OUTPUT_TOKENS_EXEC_SUMMARY +
-    (synthesisInputTokens > 0 ? 600 : 0);
-
-  const totalInputTokens =
-    fixPlanInputTokens + analysisInputTokens + executiveSummaryInputTokens + synthesisInputTokens;
-
-  return {
-    fixPlanInputTokens,
-    analysisInputTokens,
-    executiveSummaryInputTokens,
-    totalInputTokens,
-    estimatedOutputTokens,
-    estimatedTotalTokens: totalInputTokens + estimatedOutputTokens,
-    perTestCalls,
-    batchSize,
-  };
-}
-
 export async function requestFixPlanBatch(
   ctx: StandardsContext,
   failures: FailedTest[],
   logLabel = "fix-plan",
-): Promise<{ raw: string; tokenRecord: TokenCallRecord }> {
+): Promise<string> {
   const user = buildPlanUserPrompt(ctx, failures);
-  const estimatedInputTokens = estimateFixPlanInputTokens(ctx, failures);
   const result = await chatJson(FIX_PLAN_SYSTEM, user, {
     label: logLabel,
     meta: {
       type: "fix-plan",
       failureCount: failures.length,
       tests: failures.map((f) => f.testName).join(" | "),
-      estimatedInputTokens,
     },
   });
-  return {
-    raw: result.content,
-    tokenRecord: {
-      label: logLabel,
-      type: "fix-plan",
-      testName: failures.length === 1 ? failures[0]?.testName : undefined,
-      estimatedInputTokens,
-      estimatedOutputTokens: ESTIMATED_OUTPUT_TOKENS_FIX_PLAN,
-      ...mergeApiUsage(estimatedInputTokens, result.usage),
-    },
-  };
+  return result.content;
 }
 
 const ANALYSIS_SYSTEM =
@@ -493,9 +303,8 @@ export async function requestAnalysisBatch(
   testLabel: string,
   stats: { passed: number; failed: number; skipped: number },
   logLabel = "analysis",
-): Promise<{ markdown: string; tokenRecord: TokenCallRecord }> {
+): Promise<string> {
   const user = buildAnalysisUserPrompt(ctx, failures, testLabel, stats);
-  const estimatedInputTokens = estimateAnalysisInputTokens(ctx, failures, testLabel, stats);
   const analysisLogLabel = `${logLabel}-${testLabel.replace(/[^\w.-]+/g, "_").slice(0, 60)}`;
   const result = await chatText(ANALYSIS_SYSTEM, user, {
     label: analysisLogLabel,
@@ -504,20 +313,9 @@ export async function requestAnalysisBatch(
       test: testLabel,
       failureCount: failures.length,
       tests: failures.map((f) => f.testName).join(" | "),
-      estimatedInputTokens,
     },
   });
-  return {
-    markdown: result.content,
-    tokenRecord: {
-      label: logLabel,
-      type: "analysis",
-      testName: failures.length === 1 ? failures[0]?.testName : undefined,
-      estimatedInputTokens,
-      estimatedOutputTokens: ESTIMATED_OUTPUT_TOKENS_ANALYSIS,
-      ...mergeApiUsage(estimatedInputTokens, result.usage),
-    },
-  };
+  return result.content;
 }
 
 export async function requestExecutiveSummary(input: {
@@ -528,7 +326,7 @@ export async function requestExecutiveSummary(input: {
   perTestMode: boolean;
   /** When set, documents which fix plan variant is in fixPlanJson (for logging). */
   fixPlanSource?: "llm-step2" | "final";
-}): Promise<{ summary: string; tokenRecord: TokenCallRecord }> {
+}): Promise<string> {
   const planLabel =
     input.fixPlanSource === "llm-step2"
       ? "Fix plan from step 2 LLM (before classifier adjustments)"
@@ -543,42 +341,23 @@ ${input.fixPlanJson}
 
 Summarize: overall health, main failure themes, top priority fixes, how many may auto-heal.
 Each plan entry is ONE fix for a duplicate group — use appliesToCount / memberTestNames for how many tests it covers. Do NOT list separate fixes for duplicate members.`;
-  const estimatedInputTokens = estimateTokens(`${system}\n\n${user}`);
   const result = await chatText(system, user, {
     label: "executive-summary",
     meta: {
       type: "executive-summary",
       failureCount: input.failureCount,
       fixPlanSource: input.fixPlanSource ?? "final",
-      estimatedInputTokens,
     },
   });
-  return {
-    summary: result.content,
-    tokenRecord: {
-      label: "executive-summary",
-      type: "executive-summary",
-      estimatedInputTokens,
-      estimatedOutputTokens: ESTIMATED_OUTPUT_TOKENS_EXEC_SUMMARY,
-      ...mergeApiUsage(estimatedInputTokens, result.usage),
-    },
-  };
+  return result.content;
 }
 
 export async function requestSynthesisAnalysis(input: {
   batchSections: string[];
   fixPlanJson: string;
-}): Promise<{ markdown: string; tokenRecord: TokenCallRecord }> {
+}): Promise<string> {
   if (input.batchSections.length <= 1) {
-    return {
-      markdown: input.batchSections[0] ?? "",
-      tokenRecord: {
-        label: "synthesis-skipped",
-        type: "synthesis",
-        estimatedInputTokens: 0,
-        source: "estimated",
-      },
-    };
+    return input.batchSections[0] ?? "";
   }
 
   const system = "You are an expert test lead. Merge batch analyses into one coherent report.";
@@ -593,23 +372,12 @@ ${input.batchSections.join("\n\n---\n\n")}
 
 Reference fix plan for categories:
 ${input.fixPlanJson}`;
-  const estimatedInputTokens = estimateTokens(`${system}\n\n${user}`);
   const result = await chatText(system, user, {
     label: "synthesis",
     meta: {
       type: "synthesis",
       batchCount: input.batchSections.length,
-      estimatedInputTokens,
     },
   });
-  return {
-    markdown: result.content,
-    tokenRecord: {
-      label: "synthesis",
-      type: "synthesis",
-      estimatedInputTokens,
-      estimatedOutputTokens: 600,
-      ...mergeApiUsage(estimatedInputTokens, result.usage),
-    },
-  };
+  return result.content;
 }
