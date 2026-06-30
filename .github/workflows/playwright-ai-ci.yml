@@ -6,15 +6,6 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
-      auto_fix_tests:
-        description: "AUTO_FIX_TESTS"
-        required: false
-        default: "false"
-        type: choice
-        options:
-          - "false"
-          - dry-run
-          - "true"
       test_env:
         description: "TEST_ENV"
         required: false
