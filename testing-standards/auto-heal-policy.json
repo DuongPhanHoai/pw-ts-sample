@@ -16,7 +16,7 @@
     },
     "business-logic-change": {
       "description": "Requirement or visible behavior changed intentionally",
-      "autoHeal": false
+      "autoHeal": true
     },
     "test-data-issue": {
       "description": "Bad or missing test data / environment configuration",
