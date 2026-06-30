@@ -20,5 +20,5 @@ export const paths = {
   autoHealPolicy: path.join(projectRoot, "testing-standards", "auto-heal-policy.json"),
   fixAudit: path.join(projectRoot, "reports", "auto-fix-audit.json"),
   fixPlanErrors: path.join(projectRoot, "reports", "fix-plan-errors.json"),
-  llmPipelineError: path.join(projectRoot, "reports", "llm-pipeline-error.json"),
+  llmPipelineError: path.join(projectRoot, "reports", "ai-llm-pipeline-error.json"),
 };
