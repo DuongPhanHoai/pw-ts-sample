@@ -73,7 +73,7 @@ jobs:
       - name: Create pull request for AI fixes
         if: ${{ always() && env.AUTO_FIX_TESTS == 'true' && github.event_name != 'pull_request' }}
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN || github.token }}
         run: pwsh -File scripts/create-ai-fix-pr.ps1
 
       - name: Upload reports
