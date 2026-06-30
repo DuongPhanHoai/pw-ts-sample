@@ -3,7 +3,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import { chatText } from "./lib/llm";
-import { classifyFailure } from "./lib/failure-classifier";
 import {
   extractSelectorFromActionLine,
   replaceSelectorInSource,
@@ -275,27 +274,6 @@ function pickApplyPlanItem(
   return llmItem && !isStalePlanItem(llmItem) ? llmItem : rawItem;
 }
 
-function revalidatePlanItem(item: PlanItem, failure?: FailedTest): PlanItem {
-  if (!failure) return item;
-
-  const detected = classifyFailure(failure);
-  if (!detected || detected.evidenceStrength !== "strong") return item;
-
-  logApply("re-validated from failure evidence", {
-    testName: item.testName,
-    was: item.proposedChangeSummary,
-    now: detected.proposedChangeSummary,
-    hint: detected.codeChangeHints[0]?.suggestedSelectorOrChange,
-  });
-  return {
-    ...item,
-    category: detected.category,
-    confidence: Math.max(item.confidence ?? 0, detected.confidence),
-    proposedChangeSummary: detected.proposedChangeSummary,
-    codeChangeHints: detected.codeChangeHints,
-  };
-}
-
 function tryDeterministicLocatorFix(input: {
   original: string;
   category: string;
@@ -402,7 +380,7 @@ async function main(): Promise<void> {
         failuresByTestName.get(rawItem.testName),
       asFailedTest(snapshots[sourceItem.testName] ?? snapshots[rawItem.testName]),
     );
-    const item = revalidatePlanItem(sourceItem, failure);
+    const item = sourceItem;
     const hint = item.codeChangeHints[0];
     const relativePath = normalizeRelativePath(hint.filePath);
 
@@ -474,19 +452,10 @@ async function main(): Promise<void> {
       continue;
     }
 
-    const hasStrongEvidence =
-      failure !== undefined &&
-      classifyFailure(failure)?.evidenceStrength === "strong";
-
-    logApply("evidence", {
-      hasStrongEvidence,
-      hasFailureSnapshot: failure !== undefined,
-    });
-
-    if (!hasStrongEvidence && isStalePlanItem(item)) {
+    if (isStalePlanItem(item)) {
       logApply("skip", {
-        reason: "stale fix plan and no strong DOM evidence to re-validate",
-        action: "re-run: npx playwright test && npm run analyze:results",
+        reason: "stale fix plan hint — re-run: npx playwright test && npm run analyze:results",
+        file: relativePath,
       });
       continue;
     }
@@ -538,16 +507,6 @@ async function main(): Promise<void> {
         from: oldSelector,
         to: newSelector,
       });
-    }
-
-    if (!updated && hasStrongEvidence) {
-      logApply("skip", {
-        reason: "could not apply deterministic fix despite strong evidence",
-        oldSelector,
-        newSelector,
-        currentOnLine,
-      });
-      continue;
     }
 
     if (!updated) {

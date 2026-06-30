@@ -1,5 +1,4 @@
 import type { FailedTest } from "./playwright-results";
-import { classifyFailure } from "./failure-classifier";
 import {
   compactFailureSummary,
   compactFailureWithDetails,
@@ -41,7 +40,7 @@ Rules:
 - Return exactly one plan entry for the single failed test in the input (same testName).
 - Set canAutoHeal false when policy.categories[category].autoHeal is false.
 - proposedChangeSummary must be sharp and concrete (file, selector, wait, or data fix).
-- Read ALL failure fields: errorDetail, callLog, failureLocation, errorContextMd, pageEvidence, pipelineHint.
+- Read ALL failure fields: errorDetail, callLog, failureLocation, errorContextMd, pageEvidence.
 - pageEvidence carries CSS class names/rules and a rendered DOM excerpt from page-html / page-css attachments captured at failure — prefer these over guessing when the a11y snapshot lacks CSS classes.
 - If pageEvidence.closestClassMatch is present, use it as the primary selector fix (typo near-miss, e.g. .carts_item → .cart_item).
 - If callLog contains "waiting for locator(...)" or errorContextMd shows a bad selector / page snapshot mismatch, classify as locators-broken — NOT timing-flaky — even when Summary says "Test timeout exceeded".
@@ -63,7 +62,7 @@ Return ONLY valid JSON (no markdown fences) with this exact shape:
   "notes": "optional short note about overall failure themes"
 }
 Rules:
-- Step 1 receives SUMMARY ONLY (errorSummary, callLog, failureLocation, pipelineHint) — no pageEvidence or errorContextMd yet.
+- Step 1 receives SUMMARY ONLY (errorSummary, callLog, failureLocation) — no pageEvidence or errorContextMd yet.
 - Group tests that share the same root cause (e.g. same broken selector in the same page object line).
 - Every input testName must appear in exactly one memberTestNames list.
 - Copy testName strings EXACTLY from the input summaries (including file prefix like "cart-and-checkout.spec.ts > ...").
@@ -74,7 +73,7 @@ ${Object.entries(DETAIL_FIELD_DESCRIPTIONS)
   .join("\n")}
 - For locator / selector failures, usually request pageEvidence and errorContextMd.
 - For timing-only issues, errorDetail may suffice.
-- Do NOT request fields already sufficient in the summary (callLog, failureLocation, pipelineHint are already included).`;
+- Do NOT request fields already sufficient in the summary (callLog, failureLocation are already included).`;
 
 export const FIX_PLAN_DETAIL_SYSTEM = `${FIX_PLAN_SYSTEM}
 Additional rules for step 2:
@@ -157,16 +156,6 @@ export function compactFailure(f: FailedTest, maxErrorChars = getMaxErrorChars()
 
   if (f.pageEvidence) {
     payload.pageEvidence = f.pageEvidence;
-  }
-
-  const detected = classifyFailure(f);
-  if (detected) {
-    payload.pipelineHint = {
-      category: detected.category,
-      confidence: detected.confidence,
-      rootCauseSummary: detected.rootCauseSummary,
-      proposedChangeSummary: detected.proposedChangeSummary,
-    };
   }
 
   return payload;

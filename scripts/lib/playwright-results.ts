@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import { extractWaitingLocatorSelector } from "./failure-classifier";
 import { buildPageEvidence } from "./page-evidence";
 import type { PageEvidence } from "./page-evidence";
 
@@ -220,11 +219,7 @@ function buildEnrichedError(result: PlaywrightTestResult): {
     errorContextMd,
   } as FailedTest;
 
-  const pageEvidence = buildPageEvidence(
-    pageHtml,
-    pageCss,
-    extractWaitingLocatorSelector(failureDraft),
-  );
+  const pageEvidence = buildPageEvidence(pageHtml, pageCss, undefined);
 
   return { ...failureDraft, pageEvidence };
 }

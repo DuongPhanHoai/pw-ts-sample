@@ -4,7 +4,6 @@ import path from "node:path";
 import { z } from "zod";
 import { chatText } from "./lib/llm";
 import {
-  buildDeterministicTriage,
   normalizeDetailFields,
   normalizeTriageResult,
   renderTriageAnalysisMarkdown,
@@ -18,7 +17,6 @@ import {
   requestFixPlanForGroup,
   type StandardsContext,
 } from "./lib/llm-batch";
-import { applyDeterministicClassification } from "./lib/failure-classifier";
 import { getFailureLimit, shouldLogLlmToConsole } from "./lib/llm-log";
 import { loadTestRun, type FailedTest } from "./lib/playwright-results";
 import { paths, projectRoot } from "./lib/paths";
@@ -91,6 +89,8 @@ const FixPlanSchema = z.object({
   plan: z.array(FixPlanItemSchema),
 });
 
+type LlmPipelineStage = "triage" | "fix-plan" | "executive-summary" | "all-passed-summary";
+
 type FixPlanBuildError = {
   groupId: string;
   representativeTestName: string;
@@ -108,10 +108,43 @@ function errMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-function classifyFixPlanError(err: unknown): FixPlanBuildError["reason"] {
+function classifyLlmErrorReason(err: unknown): FixPlanBuildError["reason"] {
   if (err instanceof z.ZodError) return "schema_validation";
   if (err instanceof SyntaxError) return "invalid_json";
+  if (err instanceof Error && err.message.includes("valid JSON")) return "invalid_json";
   return "llm_request_failed";
+}
+
+function writeLlmPipelineError(
+  stage: LlmPipelineStage,
+  err: unknown,
+  extra?: Record<string, unknown>,
+): void {
+  fs.mkdirSync(path.dirname(paths.llmPipelineError), { recursive: true });
+  fs.writeFileSync(
+    paths.llmPipelineError,
+    JSON.stringify(
+      {
+        generatedAt: new Date().toISOString(),
+        stage,
+        reason: classifyLlmErrorReason(err),
+        message: errMessage(err),
+        ...extra,
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+}
+
+/** Log error and stop analyze — no fallback steps after an LLM failure. */
+function abortAnalyze(stage: LlmPipelineStage, err: unknown, extra?: Record<string, unknown>): never {
+  writeLlmPipelineError(stage, err, extra);
+  console.error(`\nAnalyze stopped: LLM failed at ${stage}.`);
+  console.error(`  ${errMessage(err)}`);
+  console.error(`  See ${paths.llmPipelineError}`);
+  process.exit(1);
 }
 
 async function main(): Promise<void> {
@@ -141,7 +174,6 @@ async function main(): Promise<void> {
 
   let fixPlan: FixPlanItem[] = [];
   let fixPlanLlm: FixPlanItem[] = [];
-  let fixPlanErrors: FixPlanBuildError[] = [];
   let aiAnalysis = "";
   let aiSummary = "";
   let triageResult: FailureTriageResult | undefined;
@@ -155,9 +187,7 @@ Confirm success and note no fixes are needed.`;
     const result = await chatText(system, user, {
       label: "all-passed-summary",
       meta: { type: "all-passed-summary" },
-    }).catch(() => ({
-      content: "All tests passed. No failures detected. No fixes required.",
-    }));
+    });
     aiSummary = result.content;
   } else {
     const ctx: StandardsContext = {
@@ -176,29 +206,31 @@ Confirm success and note no fixes are needed.`;
     );
 
     console.log("  Step 1: triage failure summaries…");
-    triageResult = await runTriageStep(ctx, failuresToAnalyze, stats, tokenTracker);
+    try {
+      triageResult = await runTriageStep(ctx, failuresToAnalyze, stats, tokenTracker);
+    } catch (err) {
+      abortAnalyze("triage", err, { failureCount: failuresToAnalyze.length });
+    }
     fs.writeFileSync(paths.aiTriage, JSON.stringify(triageResult, null, 2), "utf8");
 
     console.log(`  Step 2: fix plan for ${triageResult.groups.length} group(s)…`);
-    const fixPlanResult = await buildFixPlanFromTriage(
-      ctx,
-      triageResult,
-      failuresToAnalyze,
-      tokenTracker,
-    );
+    let fixPlanResult: { plan: FixPlanItem[]; planLlm: FixPlanItem[] };
+    try {
+      fixPlanResult = await buildFixPlanFromTriage(
+        ctx,
+        triageResult,
+        failuresToAnalyze,
+        tokenTracker,
+      );
+    } catch (err) {
+      const extra =
+        err instanceof FixPlanGroupError
+          ? { groupId: err.entry.groupId, fixPlanErrorsPath: paths.fixPlanErrors }
+          : undefined;
+      abortAnalyze("fix-plan", err, { triageGroupCount: triageResult.groups.length, ...extra });
+    }
     fixPlan = fixPlanResult.plan;
     fixPlanLlm = fixPlanResult.planLlm;
-    fixPlanErrors = fixPlanResult.errors;
-
-    writeFixPlanErrors(fixPlanErrors, triageResult.groups.length);
-
-    if (fixPlanErrors.length > 0) {
-      console.error(
-        `\nFix plan incomplete: ${fixPlanErrors.length} group(s) failed LLM fix-plan ` +
-          `(expected ${triageResult.groups.length}, got ${fixPlan.length}). ` +
-          `See ${paths.fixPlanErrors}`,
-      );
-    }
 
     const execPlanPayload = fixPlanLlm.map((p) => ({
       groupId: p.groupId,
@@ -217,24 +249,20 @@ Confirm success and note no fixes are needed.`;
       failuresToAnalyze.length,
     );
 
-    const execResult = await requestExecutiveSummary({
-      stats,
-      testEnv,
-      fixPlanJson,
-      failureCount: failuresToAnalyze.length,
-      perTestMode: false,
-      fixPlanSource: "llm-step2",
-    }).catch(() => ({
-      summary: `${run.failed} test(s) failed. See ai-analysis.md for triage and fix suggestions.`,
-      tokenRecord: {
-        label: "executive-summary-fallback",
-        type: "executive-summary" as const,
-        estimatedInputTokens: 0,
-        source: "estimated" as const,
-      },
-    }));
-    tokenTracker.record(execResult.tokenRecord);
-    aiSummary = execResult.summary;
+    try {
+      const execResult = await requestExecutiveSummary({
+        stats,
+        testEnv,
+        fixPlanJson,
+        failureCount: failuresToAnalyze.length,
+        perTestMode: false,
+        fixPlanSource: "llm-step2",
+      });
+      tokenTracker.record(execResult.tokenRecord);
+      aiSummary = execResult.summary;
+    } catch (err) {
+      abortAnalyze("executive-summary", err, { fixGroupCount: fixPlan.length });
+    }
   }
 
   const tokenReportPath = path.join(path.dirname(paths.resultsJson), "ai-token-estimate.json");
@@ -283,7 +311,6 @@ ${tokenBlock}
           triage: triageResult,
           tokenSummary: tokenTracker.summary(),
           failureSnapshots: buildRepresentativeFailureSnapshots(triageResult, failuresToAnalyze),
-          fixPlanErrors,
           planLlm: fixPlanLlm,
           plan: fixPlan,
         },
@@ -301,15 +328,9 @@ ${tokenBlock}
     console.log(`Wrote ${paths.aiAnalysis}`);
     console.log(`Wrote ${paths.aiTriage}`);
     console.log(`Fix plan: ${fixPlan.length} group(s) covering ${failuresToAnalyze.length} failure(s)`);
-    if (fixPlanErrors.length > 0) {
-      console.error(`Fix plan errors: ${fixPlanErrors.length} — ${paths.fixPlanErrors}`);
-    }
     console.log(`Wrote ${paths.aiFixPlan}`);
     console.log(`Wrote ${tokenReportPath}`);
     console.log(formatTokenSummary(tokenTracker.summary()));
-    if (fixPlanErrors.length > 0) {
-      process.exit(1);
-    }
   }
 }
 
@@ -319,22 +340,17 @@ async function runTriageStep(
   stats: { passed: number; failed: number; skipped: number },
   tokenTracker: TokenTracker,
 ): Promise<FailureTriageResult> {
-  try {
-    const { triage, tokenRecord } = await requestFailureTriage(ctx, failures, stats);
-    tokenTracker.record(tokenRecord);
+  const { triage, tokenRecord } = await requestFailureTriage(ctx, failures, stats);
+  tokenTracker.record(tokenRecord);
 
-    const parsed = TriageSchema.parse({
-      ...triage,
-      groups: triage.groups.map((g) => ({
-        ...g,
-        detailFieldsNeeded: normalizeDetailFields(g.detailFieldsNeeded),
-      })),
-    });
-    return normalizeTriageResult(parsed, failures);
-  } catch (err) {
-    console.warn("  Triage LLM failed, using deterministic grouping:", err);
-    return buildDeterministicTriage(failures);
-  }
+  const parsed = TriageSchema.parse({
+    ...triage,
+    groups: triage.groups.map((g) => ({
+      ...g,
+      detailFieldsNeeded: normalizeDetailFields(g.detailFieldsNeeded),
+    })),
+  });
+  return normalizeTriageResult(parsed, failures);
 }
 
 async function buildFixPlanFromTriage(
@@ -342,11 +358,10 @@ async function buildFixPlanFromTriage(
   triage: FailureTriageResult,
   allFailures: FailedTest[],
   tokenTracker: TokenTracker,
-): Promise<{ plan: FixPlanItem[]; planLlm: FixPlanItem[]; errors: FixPlanBuildError[] }> {
+): Promise<{ plan: FixPlanItem[]; planLlm: FixPlanItem[] }> {
   const resolvedGroups = resolveTriageGroups(triage, allFailures);
   const merged: FixPlanItem[] = [];
   const mergedLlm: FixPlanItem[] = [];
-  const errors: FixPlanBuildError[] = [];
 
   for (let i = 0; i < resolvedGroups.length; i++) {
     const { group, representative, members } = resolvedGroups[i];
@@ -369,29 +384,19 @@ async function buildFixPlanFromTriage(
       const planItem = parsed.plan[0];
 
       if (!planItem) {
-        const entry: FixPlanBuildError = {
-          groupId: group.groupId,
-          representativeTestName: representative.testName,
-          memberCount: members.length,
-          stage: "fix-plan-llm",
-          reason: "empty_plan",
-          message: "LLM returned valid JSON but plan[0] is missing or empty",
-          rawResponsePreview: raw.slice(0, 2000),
-        };
-        errors.push(entry);
-        console.error(`    Fix plan FAILED for ${group.groupId}: ${entry.message}`);
-        continue;
+        failFixPlanGroup(
+          group.groupId,
+          representative,
+          members.length,
+          "empty_plan",
+          "LLM returned valid JSON but plan[0] is missing or empty",
+          raw,
+          resolvedGroups.length,
+        );
       }
 
       const llmItem = planItem;
-      const item = applyDeterministicClassification(planItem, representative);
-      if (item.proposedChangeSummary !== planItem.proposedChangeSummary) {
-        console.warn(
-          `    Classifier adjusted LLM fix (group ${group.groupId}):\n` +
-            `      LLM:         ${planItem.proposedChangeSummary}\n` +
-            `      Classifier:  ${item.proposedChangeSummary}`,
-        );
-      }
+      const item = planItem;
 
       const memberNames = members.map((m) => m.testName);
       merged.push({
@@ -413,21 +418,54 @@ async function buildFixPlanFromTriage(
         rootCauseSummary: llmItem.rootCauseSummary ?? group.triageSummary,
       });
     } catch (err) {
-      const entry: FixPlanBuildError = {
-        groupId: group.groupId,
-        representativeTestName: representative.testName,
-        memberCount: members.length,
-        stage: "fix-plan-llm",
-        reason: classifyFixPlanError(err),
-        message: errMessage(err),
-        rawResponsePreview: raw?.slice(0, 2000),
-      };
-      errors.push(entry);
-      console.error(`    Fix plan FAILED for ${group.groupId}: ${entry.message}`);
+      if (err instanceof FixPlanGroupError) throw err;
+      failFixPlanGroup(
+        group.groupId,
+        representative,
+        members.length,
+        classifyLlmErrorReason(err),
+        errMessage(err),
+        raw,
+        resolvedGroups.length,
+      );
     }
   }
 
-  return { plan: merged, planLlm: mergedLlm, errors };
+  return { plan: merged, planLlm: mergedLlm };
+}
+
+class FixPlanGroupError extends Error {
+  constructor(
+    message: string,
+    readonly entry: FixPlanBuildError,
+    readonly expectedGroups: number,
+  ) {
+    super(message);
+    this.name = "FixPlanGroupError";
+  }
+}
+
+function failFixPlanGroup(
+  groupId: string,
+  representative: FailedTest,
+  memberCount: number,
+  reason: FixPlanBuildError["reason"],
+  message: string,
+  raw: string | undefined,
+  expectedGroups: number,
+): never {
+  const entry: FixPlanBuildError = {
+    groupId,
+    representativeTestName: representative.testName,
+    memberCount,
+    stage: "fix-plan-llm",
+    reason,
+    message,
+    rawResponsePreview: raw?.slice(0, 2000),
+  };
+  writeFixPlanErrors([entry], expectedGroups);
+  console.error(`    Fix plan FAILED for ${groupId}: ${message}`);
+  throw new FixPlanGroupError(`Fix plan LLM failed for ${groupId}: ${message}`, entry, expectedGroups);
 }
 
 function writeFixPlanErrors(errors: FixPlanBuildError[], expectedGroups: number): void {

@@ -1,5 +1,4 @@
 import type { FailedTest } from "./playwright-results";
-import { classifyFailure, extractWaitingLocatorSelector } from "./failure-classifier";
 import type { PageEvidence } from "./page-evidence";
 
 function getMaxErrorChars(): number {
@@ -34,13 +33,6 @@ export interface FailureSummaryItem {
   errorSummary?: string;
   callLog?: string;
   failureLocation?: { file: string; line: number; column?: number };
-  failingSelector?: string;
-  pipelineHint?: {
-    category: string;
-    confidence: number;
-    rootCauseSummary: string;
-    proposedChangeSummary: string;
-  };
 }
 
 export interface FailureTriageGroup {
@@ -75,19 +67,6 @@ export function compactFailureSummary(f: FailedTest): FailureSummaryItem {
   if (f.errorSummary) summary.errorSummary = f.errorSummary;
   if (f.callLog) summary.callLog = f.callLog;
   if (f.failureLocation) summary.failureLocation = f.failureLocation;
-
-  const selector = extractWaitingLocatorSelector(f);
-  if (selector) summary.failingSelector = selector;
-
-  const detected = classifyFailure(f);
-  if (detected) {
-    summary.pipelineHint = {
-      category: detected.category,
-      confidence: detected.confidence,
-      rootCauseSummary: detected.rootCauseSummary,
-      proposedChangeSummary: detected.proposedChangeSummary,
-    };
-  }
 
   return summary;
 }
@@ -156,9 +135,8 @@ export function compactFailureWithDetails(
 
 export function failureSignature(f: FailedTest): string {
   const loc = f.failureLocation;
-  const selector = extractWaitingLocatorSelector(f) ?? "";
   const summary = (f.errorSummary ?? f.error).replace(/\s+/g, " ").slice(0, 240);
-  return [loc?.file ?? f.file ?? "", loc?.line ?? f.line ?? "", selector, summary].join("|");
+  return [loc?.file ?? f.file ?? "", loc?.line ?? f.line ?? "", summary].join("|");
 }
 
 /** Map LLM triage test names to exact Playwright testName values (handles missing file prefix). */
@@ -212,8 +190,7 @@ export function normalizeTriageResult(
 }
 
 export function defaultDetailFieldsForFailure(f: FailedTest): DetailField[] {
-  const detected = classifyFailure(f);
-  if (detected?.category === "locators-broken") {
+  if (f.pageEvidence) {
     return ["pageEvidence", "errorContextMd"];
   }
   if (f.errorContextMd) return ["errorContextMd", "errorDetail"];
@@ -234,21 +211,15 @@ export function buildDeterministicTriage(failures: FailedTest[]): FailureTriageR
 
   for (const [index, bucket] of [...bySignature.values()].entries()) {
     const representative = bucket[0];
-    const detected = classifyFailure(representative);
-    const selector = extractWaitingLocatorSelector(representative);
     groups.push({
       groupId: `group-${index + 1}`,
       representativeTestName: representative.testName,
       memberTestNames: bucket.map((f) => f.testName),
-      likelyCategory: detected?.category,
       triageSummary:
-        detected?.rootCauseSummary ??
         representative.errorSummary ??
         "Repeated failure signature across multiple tests.",
       detailFieldsNeeded: defaultDetailFieldsForFailure(representative),
-      duplicateReason: selector
-        ? `Same failure location and locator (${selector})`
-        : "Same error signature and failure location",
+      duplicateReason: "Same error signature and failure location",
     });
   }
 
