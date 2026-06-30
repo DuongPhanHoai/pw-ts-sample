@@ -70,6 +70,16 @@ jobs:
         if: ${{ always() && env.AUTO_FIX_TESTS == 'true' }}
         run: npx playwright test --last-failed
 
+      - name: Log GH_TOKEN source
+        if: ${{ always() && env.AUTO_FIX_TESTS == 'true' && github.event_name != 'pull_request' }}
+        shell: pwsh
+        run: |
+          if ("${{ secrets.GH_TOKEN }}" -ne "") {
+            Write-Host "GH_TOKEN: using repository secret secrets.GH_TOKEN"
+          } else {
+            Write-Host "GH_TOKEN: secrets.GH_TOKEN not set — using github.token fallback"
+          }
+
       - name: Create pull request for AI fixes
         if: ${{ always() && env.AUTO_FIX_TESTS == 'true' && github.event_name != 'pull_request' }}
         env:
