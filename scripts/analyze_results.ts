@@ -11,7 +11,6 @@ import {
   type FailureTriageResult,
 } from "./lib/failure-triage";
 import {
-  estimateTwoPhaseInputTokens,
   requestExecutiveSummary,
   requestFailureTriage,
   requestFixPlanForGroup,
@@ -25,8 +24,6 @@ import {
   renderAiTestReportMarkdown,
   type FixPlanItem,
 } from "./lib/test-report";
-import { formatTokenSummary } from "./lib/token-estimate";
-import { TokenTracker } from "./lib/token-tracker";
 
 const DetailFieldSchema = z.enum([
   "errorDetail",
@@ -153,7 +150,6 @@ async function main(): Promise<void> {
   const run = loadTestRun(paths.resultsJson);
   const testEnv = process.env.TEST_ENV ?? "test";
   const failureLimit = getFailureLimit();
-  const tokenTracker = new TokenTracker();
 
   let failuresToAnalyze = run.failures;
   if (failureLimit !== undefined && failureLimit < run.failures.length) {
@@ -197,17 +193,13 @@ Confirm success and note no fixes are needed.`;
       projectRoot,
     };
 
-    const preEstimate = estimateTwoPhaseInputTokens(ctx, failuresToAnalyze, stats);
     console.log(
-      `Mode: two-phase analyze (1 triage call + ${preEstimate.estimatedGroupCount} fix group call(s) + summary)`,
-    );
-    console.log(
-      `Token pre-estimate: ~${preEstimate.totalInputTokens.toLocaleString()} input + ~${preEstimate.estimatedOutputTokens.toLocaleString()} output ≈ ~${preEstimate.estimatedTotalTokens.toLocaleString()} total`,
+      `Mode: two-phase analyze (1 triage call + fix group call(s) per triage group + summary)`,
     );
 
     console.log("  Step 1: triage failure summaries…");
     try {
-      triageResult = await runTriageStep(ctx, failuresToAnalyze, stats, tokenTracker);
+      triageResult = await runTriageStep(ctx, failuresToAnalyze, stats);
     } catch (err) {
       abortAnalyze("triage", err, { failureCount: failuresToAnalyze.length });
     }
@@ -220,7 +212,6 @@ Confirm success and note no fixes are needed.`;
         ctx,
         triageResult,
         failuresToAnalyze,
-        tokenTracker,
       );
     } catch (err) {
       const extra =
@@ -250,7 +241,7 @@ Confirm success and note no fixes are needed.`;
     );
 
     try {
-      const execResult = await requestExecutiveSummary({
+      aiSummary = await requestExecutiveSummary({
         stats,
         testEnv,
         fixPlanJson,
@@ -258,15 +249,10 @@ Confirm success and note no fixes are needed.`;
         perTestMode: false,
         fixPlanSource: "llm-step2",
       });
-      tokenTracker.record(execResult.tokenRecord);
-      aiSummary = execResult.summary;
     } catch (err) {
       abortAnalyze("executive-summary", err, { fixGroupCount: fixPlan.length });
     }
   }
-
-  const tokenReportPath = path.join(path.dirname(paths.resultsJson), "ai-token-estimate.json");
-  fs.writeFileSync(tokenReportPath, JSON.stringify(tokenTracker.toJson(), null, 2), "utf8");
 
   const report = buildAiTestReport({
     run: { ...run, failures: failuresToAnalyze },
@@ -286,15 +272,11 @@ Confirm success and note no fixes are needed.`;
     );
     fs.writeFileSync(paths.aiFixPlan, JSON.stringify({ plan: [] }, null, 2), "utf8");
   } else {
-    const tokenBlock = formatTokenSummary(tokenTracker.summary());
     const header = `# AI Test Analysis
 
 Generated: ${new Date().toISOString()}
 Failures analyzed: ${failuresToAnalyze.length}${failureLimit ? ` (limit ${failureLimit} of ${run.failures.length} total failures)` : ""}
 Mode: two-phase (triage → selective detail fix plan)
-
-## Token usage
-${tokenBlock}
 
 ---
 
@@ -309,7 +291,6 @@ ${tokenBlock}
           fixGroupCount: fixPlan.length,
           mode: "two-phase",
           triage: triageResult,
-          tokenSummary: tokenTracker.summary(),
           failureSnapshots: buildRepresentativeFailureSnapshots(triageResult, failuresToAnalyze),
           planLlm: fixPlanLlm,
           plan: fixPlan,
@@ -329,8 +310,6 @@ ${tokenBlock}
     console.log(`Wrote ${paths.aiTriage}`);
     console.log(`Fix plan: ${fixPlan.length} group(s) covering ${failuresToAnalyze.length} failure(s)`);
     console.log(`Wrote ${paths.aiFixPlan}`);
-    console.log(`Wrote ${tokenReportPath}`);
-    console.log(formatTokenSummary(tokenTracker.summary()));
   }
 }
 
@@ -338,10 +317,8 @@ async function runTriageStep(
   ctx: StandardsContext,
   failures: FailedTest[],
   stats: { passed: number; failed: number; skipped: number },
-  tokenTracker: TokenTracker,
 ): Promise<FailureTriageResult> {
-  const { triage, tokenRecord } = await requestFailureTriage(ctx, failures, stats);
-  tokenTracker.record(tokenRecord);
+  const triage = await requestFailureTriage(ctx, failures, stats);
 
   const parsed = TriageSchema.parse({
     ...triage,
@@ -357,7 +334,6 @@ async function buildFixPlanFromTriage(
   ctx: StandardsContext,
   triage: FailureTriageResult,
   allFailures: FailedTest[],
-  tokenTracker: TokenTracker,
 ): Promise<{ plan: FixPlanItem[]; planLlm: FixPlanItem[] }> {
   const resolvedGroups = resolveTriageGroups(triage, allFailures);
   const merged: FixPlanItem[] = [];
@@ -371,14 +347,12 @@ async function buildFixPlanFromTriage(
     let raw: string | undefined;
 
     try {
-      const result = await requestFixPlanForGroup(
+      raw = await requestFixPlanForGroup(
         ctx,
         group,
         representative,
         `fix-plan-${group.groupId}`,
       );
-      tokenTracker.record(result.tokenRecord);
-      raw = result.raw;
 
       const parsed = FixPlanSchema.parse(JSON.parse(raw));
       const planItem = parsed.plan[0];

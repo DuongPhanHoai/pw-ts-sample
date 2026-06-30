@@ -1,6 +1,11 @@
 import OpenAI from "openai";
 import { logLlmExchange } from "./llm-log";
-import type { TokenUsageFromApi } from "./token-estimate";
+
+export interface TokenUsageFromApi {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
 
 function getTimeoutMs(): number {
   const seconds = Number(process.env.LMSTUDIO_TIMEOUT_SECONDS ?? 60);
