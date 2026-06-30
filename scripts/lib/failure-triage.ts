@@ -161,6 +161,56 @@ export function failureSignature(f: FailedTest): string {
   return [loc?.file ?? f.file ?? "", loc?.line ?? f.line ?? "", selector, summary].join("|");
 }
 
+/** Map LLM triage test names to exact Playwright testName values (handles missing file prefix). */
+export function resolveFailureTestName(
+  name: string,
+  failures: FailedTest[],
+): string | undefined {
+  const byExact = failures.find((f) => f.testName === name);
+  if (byExact) return byExact.testName;
+
+  const stripFilePrefix = (n: string) => n.replace(/^[^:]+:\s*>\s*/, "").trim();
+  const normalized = stripFilePrefix(name);
+
+  for (const f of failures) {
+    if (stripFilePrefix(f.testName) === normalized) return f.testName;
+    if (f.testName.endsWith(` > ${name}`) || f.testName.endsWith(name)) return f.testName;
+  }
+
+  return undefined;
+}
+
+export function normalizeTriageResult(
+  triage: FailureTriageResult,
+  failures: FailedTest[],
+): FailureTriageResult {
+  const groups: FailureTriageGroup[] = [];
+
+  for (const group of triage.groups) {
+    const rep =
+      resolveFailureTestName(group.representativeTestName, failures) ??
+      group.representativeTestName;
+    const members = [
+      ...new Set(
+        group.memberTestNames
+          .map((n) => resolveFailureTestName(n, failures) ?? n)
+          .filter((n) => failures.some((f) => f.testName === n)),
+      ),
+    ];
+    const memberTestNames = members.length > 0 ? members : [rep];
+
+    groups.push({
+      ...group,
+      representativeTestName: rep,
+      memberTestNames: memberTestNames.includes(rep)
+        ? memberTestNames
+        : [rep, ...memberTestNames],
+    });
+  }
+
+  return { ...triage, groups };
+}
+
 export function defaultDetailFieldsForFailure(f: FailedTest): DetailField[] {
   const detected = classifyFailure(f);
   if (detected?.category === "locators-broken") {
@@ -236,10 +286,19 @@ export function resolveTriageGroups(
   }> = [];
 
   for (const group of triage.groups) {
-    const rep = byName.get(group.representativeTestName);
-    if (!rep) continue;
+    const repName =
+      resolveFailureTestName(group.representativeTestName, failures) ??
+      group.representativeTestName;
+    const rep = byName.get(repName);
+    if (!rep) {
+      console.warn(
+        `  Triage group "${group.groupId}": representative not found (${group.representativeTestName})`,
+      );
+      continue;
+    }
 
     const members = group.memberTestNames
+      .map((name) => resolveFailureTestName(name, failures) ?? name)
       .map((name) => byName.get(name))
       .filter((f): f is FailedTest => Boolean(f));
 

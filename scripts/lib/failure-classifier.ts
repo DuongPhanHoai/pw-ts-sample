@@ -1,3 +1,4 @@
+import { findDomSelectorReplacement } from "./page-evidence";
 import type { FailedTest } from "./playwright-results";
 
 export function extractWaitingLocatorSelector(failure: FailedTest): string | undefined {
@@ -15,9 +16,12 @@ export type FailureCategory =
   | "business-logic-change"
   | "test-data-issue";
 
+export type EvidenceStrength = "strong" | "none";
+
 export interface FailureClassification {
   category: FailureCategory;
   confidence: number;
+  evidenceStrength: EvidenceStrength;
   rootCauseSummary: string;
   proposedChangeSummary: string;
   codeChangeHints: Array<{
@@ -33,12 +37,24 @@ function suggestedSelectorFromEvidence(failure: FailedTest): string | undefined 
   return match.to;
 }
 
-/** Find other selectors in the same page object source embedded in error-context.md. */
+function suggestedSelectorFromDom(
+  badSelector: string,
+  failure: FailedTest,
+): string | undefined {
+  return findDomSelectorReplacement(
+    badSelector,
+    failure.pageEvidence?.domExcerpt,
+    failure.errorContextMd,
+  );
+}
+
 function findAlternateSelectors(
   badSelector: string,
   errorContextMd?: string,
 ): string[] {
+  if (!badSelector.trim().startsWith(".")) return [];
   if (!errorContextMd) return [];
+
   const sourceBlock = errorContextMd.match(/# Test source[\s\S]*?```ts\n([\s\S]*?)```/);
   if (!sourceBlock?.[1]) return [];
 
@@ -50,11 +66,20 @@ function findAlternateSelectors(
   return [...selectors];
 }
 
+function buildHintSnippet(_badSelector: string, suggested: string): string {
+  if (suggested.startsWith("[") && suggested.includes('"')) {
+    return `await this.page.click('${suggested}');`;
+  }
+  if (suggested.startsWith("#") || suggested.startsWith(".") || suggested.startsWith("[")) {
+    return `await this.page.click("${suggested}");`;
+  }
+  return suggested;
+}
+
 export function classifyFailure(failure: FailedTest): FailureClassification | undefined {
   const badSelector = extractWaitingLocatorSelector(failure);
   if (!badSelector) return undefined;
 
-  const alternates = findAlternateSelectors(badSelector, failure.errorContextMd);
   const loc = failure.failureLocation;
   const filePath = loc?.file ?? failure.file ?? "tests/pages/";
   const lineSuffix = loc?.line ? `:${loc.line}` : "";
@@ -65,38 +90,55 @@ export function classifyFailure(failure: FailedTest): FailureClassification | un
     /textbox "Password"/i.test(failure.errorContextMd ?? "");
 
   const evidenceSuggested = suggestedSelectorFromEvidence(failure);
+  const domSuggested = suggestedSelectorFromDom(badSelector, failure);
+  const alternates = findAlternateSelectors(badSelector, failure.errorContextMd);
+
   const suggested =
     evidenceSuggested ??
+    domSuggested ??
     alternates.find((s) => s.includes("password")) ??
-    alternates.find((s) => s !== badSelector) ??
     (passwordFieldLikely ? "#password" : undefined);
 
-  const evidenceNote = failure.pageEvidence?.closestClassMatch
-    ? ` Page HTML/CSS suggests ${failure.pageEvidence.closestClassMatch.to} (${failure.pageEvidence.closestClassMatch.source}, distance ${failure.pageEvidence.closestClassMatch.distance}).`
-    : "";
+  const evidenceStrength: EvidenceStrength =
+    evidenceSuggested || domSuggested || passwordFieldLikely ? "strong" : "none";
 
-  const rootCauseSummary = suggested
-    ? evidenceSuggested
-      ? `Wrong selector ${badSelector} — live page HTML/CSS uses ${suggested}.${evidenceNote}`
-      : `Wrong selector ${badSelector} — page uses ${suggested} (line 12 #user-name succeeded; line ${loc?.line ?? "?"} waits forever for missing element).`
-    : `Locator ${badSelector} never matched — Playwright waited until timeout (not a slow page).${evidenceNote}`;
+  if (!suggested) {
+    const evidenceNote = failure.pageEvidence?.closestClassMatch
+      ? ` Page HTML/CSS suggests ${failure.pageEvidence.closestClassMatch.to}.`
+      : "";
+    return {
+      category: "locators-broken",
+      confidence: 0.9,
+      evidenceStrength: "none",
+      rootCauseSummary: `Locator ${badSelector} never matched — Playwright waited until timeout.${evidenceNote}`,
+      proposedChangeSummary: `Fix the broken selector ${badSelector} in ${filePath}${lineSuffix} to match the live DOM (see pageEvidence / error-context).`,
+      codeChangeHints: [
+        {
+          filePath,
+          reason: `Call log: waiting for locator('${badSelector}')`,
+          suggestedSelectorOrChange: `Update selector ${badSelector} in page object`,
+        },
+      ],
+    };
+  }
 
-  const proposedChangeSummary = suggested
-    ? `In ${filePath}${lineSuffix}, replace locator("${badSelector}") with locator("${suggested}").`
-    : `Fix the broken selector ${badSelector} in ${filePath}${lineSuffix} to match the live DOM (see pageEvidence / error-context).`;
+  const evidenceNote = domSuggested
+    ? ` Live DOM uses ${domSuggested}.`
+    : evidenceSuggested
+      ? ` Page HTML/CSS suggests ${evidenceSuggested}.`
+      : "";
 
   return {
     category: "locators-broken",
-    confidence: evidenceSuggested ? 0.99 : suggested ? 0.98 : 0.9,
-    rootCauseSummary,
-    proposedChangeSummary,
+    confidence: evidenceSuggested || domSuggested ? 0.99 : 0.98,
+    evidenceStrength,
+    rootCauseSummary: `Wrong selector ${badSelector} — page uses ${suggested}.${evidenceNote}`,
+    proposedChangeSummary: `In ${filePath}${lineSuffix}, replace ${badSelector} with ${suggested}.`,
     codeChangeHints: [
       {
         filePath,
         reason: `Call log: waiting for locator('${badSelector}')`,
-        suggestedSelectorOrChange: suggested
-          ? `await this.page.locator("${suggested}").toHaveCount(count);`
-          : `Update selector ${badSelector} in page object`,
+        suggestedSelectorOrChange: buildHintSnippet(badSelector, suggested),
       },
     ],
   };
@@ -115,7 +157,7 @@ export function applyDeterministicClassification<T extends {
   }>;
 }>(item: T, failure: FailedTest): T {
   const detected = classifyFailure(failure);
-  if (!detected) return item;
+  if (!detected || detected.evidenceStrength !== "strong") return item;
 
   if (item.category === detected.category) {
     return {

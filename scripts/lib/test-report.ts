@@ -22,6 +22,11 @@ export interface FixPlanItem {
     reason: string;
     suggestedSelectorOrChange: string;
   }>;
+  /** Triage group id when this plan covers duplicate failures. */
+  groupId?: string;
+  /** All tests sharing this fix (includes representative). */
+  memberTestNames?: string[];
+  appliesToCount?: number;
 }
 
 export interface AiTestReport {
@@ -64,15 +69,32 @@ export function buildAiTestReport(input: {
       : `${run.failed} test(s) need fixing`;
 
   const planByName = new Map(fixPlan.map((p) => [p.testName, p]));
+  for (const plan of fixPlan) {
+    for (const member of plan.memberTestNames ?? []) {
+      if (!planByName.has(member)) planByName.set(member, plan);
+    }
+  }
 
-  const testsToFix = run.failures.map((failure) => {
-    const plan = planByName.get(failure.testName);
+  /** One row per fix action (representative); duplicates listed in memberTestNames. */
+  const testsToFix = fixPlan.map((plan) => {
+    const repFailure = run.failures.find((f) => f.testName === plan.testName);
+    const members = plan.memberTestNames ?? [plan.testName];
     return {
-      ...failure,
-      category: plan?.category,
-      canAutoHeal: plan?.canAutoHeal,
-      proposedChangeSummary: plan?.proposedChangeSummary,
-      rootCauseSummary: plan?.rootCauseSummary ?? failure.error,
+      ...(repFailure ?? {
+        testId: plan.testId,
+        testName: plan.testName,
+        file: plan.codeChangeHints[0]?.filePath,
+        status: "failed" as const,
+        error: plan.rootCauseSummary ?? plan.proposedChangeSummary,
+      }),
+      testName: plan.testName,
+      category: plan.category,
+      canAutoHeal: plan.canAutoHeal,
+      proposedChangeSummary: plan.proposedChangeSummary,
+      rootCauseSummary: plan.rootCauseSummary,
+      groupId: plan.groupId,
+      memberTestNames: members,
+      appliesToCount: plan.appliesToCount ?? members.length,
     };
   });
 
@@ -124,35 +146,56 @@ export function renderAiTestReportMarkdown(report: AiTestReport): string {
     lines.push("## AI Summary", "", report.aiSummary.trim(), "");
   }
 
-  lines.push("## Tests to fix", "");
+  lines.push("## Fix actions", "");
+  lines.push(
+    "_One fix per root cause. Duplicate failures are grouped; see **Applies to** for affected tests._",
+    "",
+  );
 
   if (report.testsToFix.length === 0) {
     lines.push("_No failing tests — nothing to fix._", "");
   } else {
     lines.push(
-      "| Test | File | Category | Auto-heal? | Action |",
-      "|------|------|----------|------------|--------|",
+      "| Representative test | Applies to | Category | Auto-heal? | Fix |",
+      "|---------------------|------------|----------|------------|-----|",
     );
     for (const item of report.testsToFix) {
-      const file = item.file ? `\`${item.file}\`` : "—";
       const category = item.category ?? "—";
       const autoHeal =
         item.canAutoHeal === undefined ? "—" : item.canAutoHeal ? "Yes" : "No";
       const action = item.proposedChangeSummary ?? item.error;
+      const appliesTo =
+        "appliesToCount" in item && typeof item.appliesToCount === "number"
+          ? `${item.appliesToCount} test(s)`
+          : "1 test";
       lines.push(
-        `| ${escapeCell(item.testName)} | ${file} | ${category} | ${autoHeal} | ${escapeCell(action)} |`,
+        `| ${escapeCell(item.testName)} | ${appliesTo} | ${category} | ${autoHeal} | ${escapeCell(action)} |`,
       );
     }
     lines.push("");
 
-    lines.push("### Failure details", "");
+    lines.push("### Fix details (representative only)", "");
     for (const item of report.testsToFix) {
       lines.push(`#### ${item.testName}`, "");
+      if ("memberTestNames" in item && Array.isArray(item.memberTestNames) && item.memberTestNames.length > 1) {
+        lines.push(`**Also fixes:** ${item.memberTestNames.length - 1} duplicate(s) with the same root cause.`, "");
+      }
       if (item.rootCauseSummary) {
         lines.push(`**Root cause:** ${item.rootCauseSummary}`, "");
       }
       lines.push("```", item.error, "```", "");
     }
+  }
+
+  lines.push("## All failed tests", "");
+  if (report.failedTests.length === 0) {
+    lines.push("_None._", "");
+  } else {
+    for (const test of report.failedTests) {
+      const file = test.file ? ` (\`${test.file}\`)` : "";
+      lines.push(`- ${test.testName}${file}`);
+    }
+    lines.push("");
   }
 
   lines.push("## Passed tests", "");
@@ -173,7 +216,7 @@ export function renderAiTestReportMarkdown(report: AiTestReport): string {
     lines.push(
       "## Recommendation",
       "",
-      "1. Review **Tests to fix** above.",
+      "1. Review **Fix actions** above.",
       "2. Run `npm run apply:ai-fixes` with `AUTO_FIX_TESTS=dry-run` for suggested patches.",
       "3. Re-run: `npx playwright test --last-failed`",
       "",

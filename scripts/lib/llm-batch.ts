@@ -64,7 +64,8 @@ Rules:
 - Step 1 receives SUMMARY ONLY (errorSummary, callLog, failureLocation, pipelineHint) — no pageEvidence or errorContextMd yet.
 - Group tests that share the same root cause (e.g. same broken selector in the same page object line).
 - Every input testName must appear in exactly one memberTestNames list.
-- Pick one representativeTestName per group (prefer shortest name or first occurrence).
+- Copy testName strings EXACTLY from the input summaries (including file prefix like "cart-and-checkout.spec.ts > ...").
+- Pick one representativeTestName per group (first failure in the duplicate set).
 - detailFieldsNeeded must list what extra evidence step 2 needs. Allowed values:
 ${Object.entries(DETAIL_FIELD_DESCRIPTIONS)
   .map(([key, desc]) => `  - ${key}: ${desc}`)
@@ -537,22 +538,30 @@ export async function requestExecutiveSummary(input: {
   fixPlanJson: string;
   failureCount: number;
   perTestMode: boolean;
+  /** When set, documents which fix plan variant is in fixPlanJson (for logging). */
+  fixPlanSource?: "llm-step2" | "final";
 }): Promise<{ summary: string; tokenRecord: TokenCallRecord }> {
+  const planLabel =
+    input.fixPlanSource === "llm-step2"
+      ? "Fix plan from step 2 LLM (before classifier adjustments)"
+      : "Fix plan (all failures)";
   const system = "You are a QA lead. Write a concise executive summary in 4-6 sentences.";
   const user = `TEST_ENV=${input.testEnv}
 Results: ${JSON.stringify(input.stats)}
 Analyzed ${input.failureCount} failure(s) ${input.perTestMode ? "one test per LLM call" : "in batches"}.
 
-Fix plan (all failures):
+${planLabel}:
 ${input.fixPlanJson}
 
-Summarize: overall health, main failure themes, top priority fixes, how many may auto-heal.`;
+Summarize: overall health, main failure themes, top priority fixes, how many may auto-heal.
+Each plan entry is ONE fix for a duplicate group — use appliesToCount / memberTestNames for how many tests it covers. Do NOT list separate fixes for duplicate members.`;
   const estimatedInputTokens = estimateTokens(`${system}\n\n${user}`);
   const result = await chatText(system, user, {
     label: "executive-summary",
     meta: {
       type: "executive-summary",
       failureCount: input.failureCount,
+      fixPlanSource: input.fixPlanSource ?? "final",
       estimatedInputTokens,
     },
   });

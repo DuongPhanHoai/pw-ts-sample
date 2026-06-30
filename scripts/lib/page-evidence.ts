@@ -156,6 +156,8 @@ export function findClosestClassMatch(
   cssClasses: string[],
   domClasses: string[],
 ): ClosestClassMatch | undefined {
+  if (!failingSelector.trim().startsWith(".")) return undefined;
+
   const token = selectorToken(failingSelector);
   if (!token) return undefined;
 
@@ -186,6 +188,53 @@ export function findClosestClassMatch(
   }
 
   return best;
+}
+
+/** Match a wrong #id selector to id/data-test on the live DOM (e.g. #btn-checkout → [data-test="checkout"]). */
+export function findDomSelectorReplacement(
+  failingSelector: string,
+  domHtml?: string,
+  errorContextMd?: string,
+): string | undefined {
+  const trimmed = failingSelector.trim();
+  if (!trimmed.startsWith("#")) return undefined;
+
+  const badId = trimmed.slice(1).toLowerCase();
+  const haystack = `${domHtml ?? ""}\n${errorContextMd ?? ""}`;
+  if (!haystack.trim()) return undefined;
+
+  const ids = new Set<string>();
+  for (const match of haystack.matchAll(/\bid="([^"]+)"/gi)) {
+    ids.add(match[1]);
+  }
+
+  const dataTests = new Set<string>();
+  for (const match of haystack.matchAll(/data-test="([^"]+)"/gi)) {
+    dataTests.add(match[1]);
+  }
+
+  const stem = badId.replace(/^btn-/, "");
+
+  for (const id of ids) {
+    if (id.toLowerCase() === stem) {
+      const dt = [...dataTests].find((d) => d.toLowerCase() === stem);
+      if (dt) return `[data-test="${dt}"]`;
+      return `#${id}`;
+    }
+  }
+
+  for (const dt of dataTests) {
+    if (dt.toLowerCase() === stem) return `[data-test="${dt}"]`;
+  }
+
+  if (/button "Checkout"/i.test(haystack) && stem.includes("checkout")) {
+    const checkoutTest = [...dataTests].find((d) => d.toLowerCase() === "checkout");
+    if (checkoutTest) return `[data-test="${checkoutTest}"]`;
+    const checkoutId = [...ids].find((id) => id.toLowerCase() === "checkout");
+    if (checkoutId) return `#${checkoutId}`;
+  }
+
+  return undefined;
 }
 
 export function buildPageEvidence(
