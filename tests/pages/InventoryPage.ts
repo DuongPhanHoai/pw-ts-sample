@@ -13,6 +13,6 @@ export class InventoryPage {
   }
 
   async expectItemsInCart(count: number) {
-    await expect(this.page.locator(".carts_item")).toHaveCount(count);
+    await expect(this.page.locator(".cart_item")).toHaveCount(count);
   }
 }
