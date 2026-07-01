@@ -71,7 +71,7 @@ jobs:
         run: npx playwright test --last-failed
 
       - name: Log GH_TOKEN source
-        if: ${{ always() && env.AUTO_FIX_TESTS == 'true' && github.event_name != 'pull_request' }}
+        if: ${{ always() && env.AUTO_FIX_TESTS == 'true' }}
         shell: pwsh
         run: |
           if ("${{ secrets.GH_TOKEN }}" -ne "") {
