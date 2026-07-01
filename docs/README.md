@@ -19,7 +19,8 @@ This folder holds **detailed guides**. Use README for “what is this repo?”; 
 | Doc | Audience | Contents |
 |-----|----------|----------|
 | **[../ai-test/docs/LLM-EVAL-STRATEGY.md](../ai-test/docs/LLM-EVAL-STRATEGY.md)** | Leadership & evaluation | CEO-ready value case, LLM scorecard, rollout strategy |
-| **[../ai-test/docs/ideas.md](../ai-test/docs/ideas.md)** | Evaluation plan | LLM metrics, golden corpus, eval harness, observability |
+| **[../ai-test/docs/TESTING-SCENARIOS.md](../ai-test/docs/TESTING-SCENARIOS.md)** | Evaluation fixtures | Concrete scenarios for the first `ai-test/inputs` corpus |
+| **[../ai-test/docs/ideas.md](../ai-test/docs/ideas.md)** | Evaluation implementation | Eval harness, logging, optional tools, observability |
 | **[../ai-test/docs/Strategy.md](../ai-test/docs/Strategy.md)** | Strategy (short) | Offline fixture eval; one case at a time; not CI |
 | **[../ai-test/inputs/](../ai-test/inputs/)** | Reusable fixtures | One folder per case (`<case-label>/results.json`, html, css, ground truth) |
 

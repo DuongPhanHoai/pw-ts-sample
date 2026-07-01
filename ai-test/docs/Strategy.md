@@ -23,6 +23,13 @@ This area is for **offline evaluation** of LLM analyze/fix behavior using **save
 
 - **Fixture-first** — LLM inputs are files on disk (`results.json`, `error-context.md`, page HTML/CSS), not a fresh test execution.
 - **Isolated from CI** — Compare models and prompts on your machine; do not tie eval to GitHub Actions or runner setup.
-- **Safety mindset** (for when apply is hooked up) — Policy traps in `inputs/` should prove the model refuses bad auto-heals; scoring comes from [ideas.md](ideas.md).
+- **Safety mindset** (for when apply is hooked up) — Policy traps in `inputs/` should prove the model refuses bad auto-heals; the canonical scorecard and promotion rules live in [LLM-EVAL-STRATEGY.md](LLM-EVAL-STRATEGY.md).
 
 Playwright pipeline design (analyze, apply, PR): **[docs/AI-POST-AUTO-HEAL.md](../../docs/AI-POST-AUTO-HEAL.md)**.
+
+Doc roles:
+
+- [Strategy.md](Strategy.md) — workflow: capture once, run one case, wire replay later.
+- [LLM-EVAL-STRATEGY.md](LLM-EVAL-STRATEGY.md) — why measure, scorecard, promotion rules, rollout, CEO view.
+- [TESTING-SCENARIOS.md](TESTING-SCENARIOS.md) — concrete fixture scenarios to create first.
+- [ideas.md](ideas.md) — implementation notes for eval scripts, logging, tools, and observability.

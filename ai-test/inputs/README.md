@@ -29,18 +29,41 @@ ai-test/inputs/<case-label>/
 | `page-html.html` | `test-results/.../page-html-*.html` or attachment export |
 | `page-css.css` | `test-results/.../page-css-*.css` or attachment export |
 | `error-context.md` | `test-results/.../error-context.md` |
-| `groundtruth.json` | Hand-written expected groups, category, file/line, before/after (see [ideas.md](../docs/ideas.md)) |
+| `groundtruth.json` | Hand-written expected groups, category, file/line, before/after, and policy outcome (see [LLM-EVAL-STRATEGY.md](../docs/LLM-EVAL-STRATEGY.md)) |
 
 ---
 
 ## How to capture from a real run
+
+### Option A — scan and export (recommended)
+
+After a failing Playwright run:
+
+```bash
+npm run ai-test:scan
+npm run ai-test:capture -- --label locator-checkout-btn --group 0 --scope single
+npm run ai-test:capture -- --label duplicate-matrix-locator --group 0 --scope group
+```
+
+Reads `reports/results.json` and copies attachments from `test-results/` into `ai-test/inputs/<label>/`.
+
+| Flag | Meaning |
+|------|---------|
+| `--group <id>` | Root-cause group from scan (default `0`) |
+| `--scope single` | One failure + trimmed `results.json` |
+| `--scope group` | All failures sharing the same root cause |
+| `--scope all` | Entire failure set from the last run |
+
+Also writes `capture-meta.json` (source paths, member test names).
+
+### Option B — manual copy
 
 1. Run tests once with failures and attachments enabled (`tests/fixtures.ts` captures page-html / page-css on failure).
 2. Copy from the repo after the run:
    - `reports/results.json`
    - Matching files under `test-results/` for the failing test(s)
 3. Create `ai-test/inputs/<case-label>/` and paste files using the names above.
-4. Add `groundtruth.json` when you want scored eval (Phase 1 in [ideas.md](../docs/ideas.md)).
+4. Add `groundtruth.json` when you want scored eval (Phase 1 in [LLM-EVAL-STRATEGY.md](../docs/LLM-EVAL-STRATEGY.md)).
 
 ---
 
@@ -55,6 +78,6 @@ ai-test/inputs/<case-label>/
 
 - **Folder name:** lowercase, hyphen-separated, describes root cause (not run id or date).
 - **Do not** commit secrets or huge traces; trim `results.json` to relevant failures if needed.
-- Prefer **3–10 cases** covering: single-root multi-test, mixed-root, and policy traps.
+- Start with **5–8 cases** covering single-root multi-test, mixed-root, and policy traps; grow toward **15 cases** once the scoring harness is stable.
 
-See [Strategy.md](../docs/Strategy.md) — fixtures are separate from the Playwright CI pipeline.
+See [TESTING-SCENARIOS.md](../docs/TESTING-SCENARIOS.md) for the concrete cases to create first. Fixtures are separate from the Playwright CI pipeline; see [Strategy.md](../docs/Strategy.md).

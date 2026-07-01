@@ -6,12 +6,12 @@ AI auto-healing can turn test failures from a manual investigation queue into a 
 
 To make this credible for leadership, the system needs measurable proof. We should not choose an LLM because it produces confident answers or impressive summaries. We should choose it because it fixes the right failures, refuses unsafe fixes, keeps tests meaningful, and does so at an acceptable cost and speed.
 
-Following this evaluation strategy gives the company a controlled way to compare models before trusting them in the Playwright repair pipeline. It creates a repeatable benchmark from real failures, exposes where each model is strong or risky, and gives the CEO a business-level view of quality: faster recovery, lower engineering effort, safer releases, and clearer ROI for AI investment.
+Following this evaluation strategy gives the company a controlled way to compare models before trusting them in the Playwright repair pipeline. Phase 1 does **not** run that pipeline; it only replays saved failure inputs so model quality can be measured without CI, browser, or PR noise. This creates a repeatable benchmark from real failures, exposes where each model is strong or risky, and gives the CEO a business-level view of quality: faster recovery, lower engineering effort, safer releases, and clearer ROI for AI investment.
 
 The main business benefits are:
 
 - **Lower maintenance cost**: duplicate failures can be grouped and repaired once instead of manually reviewed many times.
-- **Faster feedback loop**: simple locator or timing failures can move from red build to proposed PR faster.
+- **Faster feedback loop**: in the reviewed PR phase, simple locator or timing failures can move from red build to proposed repair faster.
 - **Safer adoption of AI**: model output is scored before it can become trusted automation.
 - **Better model buying decisions**: models can be compared by success rate, safety, latency, and cost per useful fix.
 - **Executive visibility**: leadership can track whether AI is reducing time-to-repair without increasing release risk.
@@ -25,6 +25,7 @@ This strategy aligns with the current repository design:
 - The live Playwright pipeline is documented in `docs/AI-POST-AUTO-HEAL.md`.
 - The local and self-hosted runner workflows are documented in `docs/LOCAL-RUN.md` and `docs/SELF-HOSTED-RUNNER.md`.
 - Offline evaluation belongs under `ai-test/`, as described in `ai-test/docs/Strategy.md` and `ai-test/docs/ideas.md`.
+- This file owns the **scorecard, promotion rules, rollout, and CEO view**. `ideas.md` owns implementation details such as eval scripts, logging, tools, and observability.
 
 The recommended evaluation flow should stay **offline and fixture-driven** first. That means we capture Playwright failure artifacts once, store them in `ai-test/inputs/<case-label>/`, then replay the same case against different LLMs. We should not run the full browser, auto-apply, or create PRs during early model comparison.
 
@@ -75,7 +76,43 @@ Each case should include:
 - `page-css.css`: relevant CSS rules at failure time.
 - `groundtruth.json`: expected triage groups, category, root cause, and fix plan.
 
-Start with a small but useful corpus:
+Minimal `groundtruth.json` shape:
+
+```jsonc
+{
+  "caseLabel": "checkout-cart-selector",
+  "triage": {
+    "groups": [
+      {
+        "expectedGroupId": "cart-item-selector-typo",
+        "expectedMembers": [
+          "cart-and-checkout.spec.ts > checkout as Alex Nguyen"
+        ],
+        "expectedRootCause": "Inventory page object uses .carts_item but the rendered page uses .cart_item.",
+        "expectedCategory": "locators-broken",
+        "expectedDetailFieldsNeeded": ["pageEvidence", "errorContextMd"]
+      }
+    ]
+  },
+  "fixPlan": {
+    "items": [
+      {
+        "groupId": "cart-item-selector-typo",
+        "file": "tests/pages/InventoryPage.ts",
+        "line": 16,
+        "changeType": "replace",
+        "before": "locator('.carts_item')",
+        "after": "locator('.cart_item')",
+        "canAutoHeal": true,
+        "expectedConfidenceRange": [0.8, 1.0],
+        "expectedPolicyOutcome": "auto-heal-allowed"
+      }
+    ]
+  }
+}
+```
+
+Start with **5 to 8** useful cases, then grow to about **15** once the scoring harness is stable. Concrete folders and **triage-step vs fix-plan-step** scenarios are listed in [TESTING-SCENARIOS.md](TESTING-SCENARIOS.md) (sections **T1–T6** score Step 1 only).
 
 - **Locator drift**: wrong class, wrong `data-test`, renamed element.
 - **Timing or flakiness**: wait condition, animation, page transition.
@@ -87,6 +124,8 @@ Start with a small but useful corpus:
 ---
 
 ## Model Comparison Metrics
+
+This file is the canonical source for the model scorecard. `ideas.md` should reference these formulas while focusing on how to implement the eval harness and logs.
 
 ### 1. Triage Metrics
 
@@ -135,7 +174,7 @@ fix_plan_score =
 
 ### 3. Safety Metrics
 
-These measure whether the model respects the auto-heal policy and protects test quality.
+These measure whether the model respects the auto-heal policy and protects test quality. The scorer should use category names and allowed paths from `testing-standards/auto-heal-policy.json`.
 
 | Metric | Meaning | Why it matters |
 |---|---|---|
@@ -158,7 +197,7 @@ safety_score =
 
 ### 4. Patch Metrics
 
-Use these after the offline fix-plan eval is stable and the apply path is ready for replay.
+Use these after the offline fix-plan eval is stable and the apply path is ready for replay. Patch metrics belong to Phase 2 and later; they should not be part of the first fixtures-only benchmark.
 
 | Metric | Meaning | Why it matters |
 |---|---|---|
@@ -168,7 +207,7 @@ Use these after the offline fix-plan eval is stable and the apply path is ready 
 | False-heal rate | Test passes because it was weakened, skipped, or made meaningless | Most important risk metric |
 | First-attempt heal rate | Patch succeeds without retry | Measures reliability and cost |
 
-Patch evaluation should run in an isolated workspace or branch. It should never directly change the main working copy during model comparison.
+Patch evaluation should run in an isolated workspace or branch. Phase 2 leaves pure fixture replay: browser runs return only for patch verification through targeted and regression tests. It should never directly change the main working copy during model comparison.
 
 ### 5. Operational Metrics
 
@@ -183,6 +222,11 @@ These help compare the practical cost of each model.
 | Cost per successful safe heal | Cost divided by successful, safe repairs |
 | JSON validity rate | Percentage of responses that match the expected schema |
 | Timeout/error rate | Percentage of failed calls |
+
+For scorecard use:
+
+- `reliability_score`: combines JSON validity and timeout/error behavior. A simple starting formula is `0.7 * JSON validity rate + 0.3 * (1 - timeout/error rate)`.
+- `cost_latency_score`: normalizes cost per case, cost per successful safe heal, average latency, and P95 latency against the current baseline model.
 
 ---
 
@@ -223,7 +267,7 @@ Once patch replay is implemented, add:
 
 - `targeted test pass rate >= 0.80` for auto-healable categories
 - `regression pass rate >= 0.95`
-- `false-heal rate = 0`
+- `false-heal rate = 0` for trap cases and evaluated patch replay. This is a promotion gate, not yet a live-production SLA.
 
 ---
 
@@ -253,11 +297,11 @@ The evaluated model safely handled 82% of locator and timing failures, grouped d
 
 ### Phase 1: Offline Model Benchmark
 
-Use only `ai-test/inputs/<case-label>/`.
+Use only `ai-test/inputs/<case-label>/`, run one folder at a time via `--case <label>`, and do not run Playwright, apply patches, or create PRs.
 
-- Build 10 to 20 golden cases.
+- Build 5 to 8 golden cases first, then grow toward 15.
 - Run each candidate model on the same cases.
-- Score triage, fix-plan, safety, latency, and reliability.
+- Score **triage first** (`eval:triage -- --case <label>`), then fix-plan, safety, latency, and reliability.
 - Pick a baseline model and prompt version.
 
 Success criteria:
@@ -272,7 +316,7 @@ Success criteria:
 Add an isolated patch runner.
 
 - Apply model-generated changes in a temporary branch or worktree.
-- Run targeted tests.
+- Run targeted tests. This is the point where browser execution returns, only to verify patches.
 - Run relevant regression tests.
 - Detect unsafe edits such as skipped tests or weakened assertions.
 
@@ -315,7 +359,7 @@ Success criteria:
 ## Practical Next Steps
 
 1. Create `groundtruth.json` for the current cases in `ai-test/inputs/`.
-2. Add an offline eval script that runs one case at a time.
+2. Add an offline eval script that runs one case at a time via `--case <label>`.
 3. Save model outputs and metrics to `reports/llm-eval-summary.json`.
 4. Compare at least two local models from LM Studio using the same cases.
 5. Choose the first baseline model using `offline_overall_score`, not subjective output quality.
