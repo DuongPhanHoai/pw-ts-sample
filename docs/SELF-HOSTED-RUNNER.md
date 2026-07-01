@@ -2,6 +2,8 @@
 
 Run **Playwright CI with Local AI** on your laptop using a GitHub self-hosted runner.
 
+**Doc index:** [docs/README.md](README.md) · **Local (no GitHub):** [LOCAL-RUN.md](LOCAL-RUN.md)
+
 **Repository:** [DuongPhanHoai/pw-ts-sample](https://github.com/DuongPhanHoai/pw-ts-sample)  
 **Register a new runner (Windows x64):**  
 https://github.com/DuongPhanHoai/pw-ts-sample/settings/actions/runners/new?arch=x64&os=win
@@ -105,13 +107,31 @@ In the repo: **Settings → Secrets and variables → Actions → Variables**
 
 Optional:
 
-| Variable | Values |
+| Variable / secret | Values |
 |----------|--------|
-| `AUTO_FIX_TESTS` | `false` (default), `dry-run`, `true` — when `true`, workflow opens a **pull request** with changes under `tests/` |
+| `AUTO_FIX_TESTS` | Overridden to `"true"` in workflow job `env` today — auto-heal + PR on every AI CI run |
+| `GH_TOKEN` | Optional PAT secret; else `GITHUB_TOKEN` is used for push + PR API |
 
-**GitHub CLI (`gh`)** on the runner machine is required for the PR step (install: https://cli.github.com/). `GITHUB_TOKEN` permissions are set in the workflow (`contents: write`, `pull-requests: write`).
+**PR creation:** uses GitHub REST API in CI (GitHub CLI optional for local `npm run create-ai-fix-pr`).  
+Enable **Settings → Actions → General → Allow GitHub Actions to create and approve pull requests**, or set secret **`GH_TOKEN`**.
 
 **Secrets** (optional): `LMSTUDIO_API_KEY` — LM Studio usually accepts any placeholder (`lm-studio`).
+
+---
+
+## What the AI workflow does (each run)
+
+| Step | Command / script |
+|------|------------------|
+| Checkout | `actions/checkout@v4` (or plain `git` if repo blocks `actions/*`) |
+| Test | `npm test` |
+| Analyze | `npm run analyze:results` |
+| Apply | `npm run apply:ai-fixes` |
+| Re-run | `npx playwright test --last-failed` |
+| **PR** | `scripts/create-ai-fix-pr.ps1` → branch `ai-fix/run-<runId>-<attempt>` → **PR base = branch that triggered the run** |
+| Artifacts | `reports/`, `playwright-report/` |
+
+The **PR description** includes an **### AI fix plan** section (root cause, proposed change, hints from `reports/ai-fix-plan.json` for applied files).
 
 ---
 
@@ -128,13 +148,14 @@ Optional:
 > **`.\run.cmd` does not run tests by itself.** It only listens for GitHub jobs.  
 > You must **trigger a workflow** (below). Reports appear **after a job finishes**.
 
-### From GitHub UI (recommended first time)
+### Manual run (workflow_dispatch)
 
-1. Keep `.\run.cmd` running in a terminal (runner **Idle** → **Active** when job starts).  
+1. Runner **Idle** (`.\run.cmd` in your actions-runner install folder).  
 2. **Actions** → **Playwright CI with Local AI** → **Run workflow**  
-3. Branch: `saucedemo-ai` (or your branch)  
-4. Choose `TEST_ENV` (default `dev`) and `AUTO_FIX_TESTS` (default `false`)  
-5. Click **Run workflow**
+3. Pick **branch** (e.g. `saucedemo-ai`) and **TEST_ENV** (default `dev`)  
+4. Click **Run workflow**
+
+Works on **push**, **pull_request**, and **manual** triggers.
 
 ### From a push
 
@@ -146,7 +167,7 @@ Push to branch `main`, `saucedemo`, or `saucedemo-ai` (see workflow `on:` trigge
 |----------|------|
 | **GitHub → Actions → run → Artifacts → `reports`** | After self-hosted job completes (download zip) |
 | `ai-test-report.md` inside that zip | Main AI summary (pass/fail, tests to fix) |
-| **Pull Requests** tab | When `AUTO_FIX_TESTS=true`, branch `ai-fix/run-<id>` → PR **fix(tests): AI auto-heal** |
+| **Pull Requests** tab | Branch `ai-fix/run-<runId>-<attempt>` → PR **fix(tests): AI auto-heal** (base = trigger branch, body includes fix plan) |
 | `C:\actions-runner\pw-ts-sample\_work\...\reports\` | During/just after job (runner checkout; cleaned between runs) |
 | `D:\Testing\pw-ts-sample\reports\` | **Only** if you run `npm run pipeline:local` locally — **not** from `run.cmd` alone |
 

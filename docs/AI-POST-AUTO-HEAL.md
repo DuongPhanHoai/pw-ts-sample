@@ -66,6 +66,31 @@ See also [LOCAL-RUN.md](LOCAL-RUN.md) for setup and troubleshooting.
 
 ---
 
+## CI auto-heal and pull request
+
+When **`playwright-ai-ci.yml`** runs with `AUTO_FIX_TESTS: "true"` (current default in job `env`):
+
+```
+analyze → apply (LLM writes tests/) → re-run --last-failed → create-ai-fix-pr.ps1
+```
+
+| Artifact | Role |
+|----------|------|
+| `reports/ai-fix-plan.json` | Plan rows copied into PR **### AI fix plan** |
+| `reports/auto-fix-audit.json` | Which files were applied; used to match plan rows |
+| Git branch `ai-fix/run-<GITHUB_RUN_ID>-<attempt>` | Head of the PR |
+| Trigger branch (`github.ref_name` / `github.head_ref`) | **Base** of the PR (not `main` by default) |
+
+Local equivalent after apply:
+
+```powershell
+$env:AUTO_FIX_TESTS="true"
+npm run apply:ai-fixes
+npm run create-ai-fix-pr
+```
+
+---
+
 ## Phase 1 — Failure capture (Playwright)
 
 ### Standard Playwright artifacts
@@ -95,17 +120,17 @@ These land under `test-results/.../` and appear in `reports/results.json` attach
 
 Implemented in `scripts/analyze_results.ts` with helpers in:
 
-- `scripts/lib/failure-triage.ts` — summaries, grouping, selective detail
+- `scripts/lib/failure-triage.ts` — compact summaries, group resolution, selective detail for step 2
 - `scripts/lib/page-evidence.ts` — build `pageEvidence` from attachments
-- `scripts/lib/failure-classifier.ts` — deterministic locator hints
-- `scripts/lib/llm-batch.ts` — triage and fix-plan prompts
+- `scripts/lib/llm-batch.ts` — triage and fix-plan LLM prompts
+
+**LLM-only:** there is no separate `failure-classifier.ts` and no deterministic code-apply path. Triage and fix-plan come from the LLM; apply uses the LLM to rewrite whole files.
 
 ### Step 1 — Triage (one LLM call for all failures)
 
-**Input:** compact **summary** per failed test:
+**Input:** compact **summary** per failed test (`compactFailureSummary`):
 
-- `testName`, `file`, `line`, `errorSummary`, `callLog`, `failureLocation`, `failingSelector`
-- `pipelineHint` from the deterministic classifier (category, suggested fix when obvious)
+- `testName`, `file`, `line`, `errorSummary`, `callLog`, `failureLocation`
 
 **Not included yet:** `errorContextMd`, `pageEvidence`, full stack traces.
 
@@ -126,7 +151,7 @@ Implemented in `scripts/analyze_results.ts` with helpers in:
 }
 ```
 
-**Fallback:** if the triage LLM fails, failures are grouped deterministically by signature (file + line + selector + error summary).
+**On LLM failure:** analyze **stops** (`abortAnalyze`) and writes `reports/ai-llm-pipeline-error.json` — there is no silent fallback to deterministic triage in the current pipeline.
 
 ### Step 2 — Fix plan (one LLM call per group)
 
@@ -146,21 +171,25 @@ Reports:
 
 | File | Contents |
 |------|----------|
-| `reports/ai-fix-plan.json` | Full plan + triage snapshot |
+| `reports/ai-fix-plan.json` | `{ "plan": [...] }` — one entry per triage group |
 | `reports/ai-triage.json` | Step 1 groups only |
 | `reports/ai-analysis.md` | Step 1 triage + step 2 fix sections |
 | `reports/ai-test-report.md` | Human-readable report for QA |
-| `reports/ai-token-estimate.json` | Token usage per LLM call |
+| `reports/llm-prompts/*.txt` | Full LLM request/response logs (when enabled) |
 
-### Deterministic layer
+### Non-LLM helpers (not a “deterministic apply layer”)
 
-Before and after LLM calls, `failure-classifier.ts` can:
+These are **support code**, not a parallel fix engine:
 
-- Detect “waiting for locator('.carts_item')” patterns
-- Compare against `pageEvidence.closestClassMatch` (e.g. `.carts_item` → `.cart_item`, distance 1)
-- Boost confidence and override weak LLM categories for obvious locator typos
+| Helper | Role |
+|--------|------|
+| `compactFailureSummary` | Shrinks failures for step 1 prompts |
+| `resolveTriageGroups` | Maps LLM group names → live failures; adds ungrouped failures |
+| `failureSignature` | Used only by unused `buildDeterministicTriage()` (not called in current pipeline) |
+| `resolveApplyTargetKey` | Dedupes apply to one action per `file:line` (or `file:groupId` / `file:testName`) |
+| `isAllowedPath` + policy | Blocks apply outside allowed paths |
 
-This reduces hallucinated “timing” diagnoses when the real issue is a selector typo.
+**Apply is LLM-only:** `chatText()` returns the **full updated file**; there is no rule-based patch or selector-quote shortcut on apply.
 
 ---
 
@@ -268,10 +297,10 @@ Standards: `testing-standards/ui-playwright-standards.md`, `evaluation-criteria.
 ### Known gaps / future work
 
 - [ ] Structured patch hunks instead of full-file LLM rewrite on apply
-- [ ] PR bot integration (post triage + fix plan as review comment)
+- [x] PR bot integration — `scripts/create-ai-fix-pr.ps1` (branch + PR with fix plan in body)
 - [ ] Eval suite: golden failures → expected fix plan JSON
 - [ ] Optional screenshot + vision model for layout regressions
-- [ ] CI analyze without trace (page-html/css attachments work in CI)
+- [ ] Re-wire `buildDeterministicTriage()` as optional fallback when step 1 LLM fails
 
 ---
 
@@ -279,13 +308,14 @@ Standards: `testing-standards/ui-playwright-standards.md`, `evaluation-criteria.
 
 ```
 scripts/
-  analyze_results.ts       # Orchestrates two-phase analyze
-  apply_ai_fixes.ts        # Policy-governed file apply
+  analyze_results.ts       # Orchestrates two-phase analyze (LLM-only)
+  apply_ai_fixes.ts        # Policy-governed LLM file apply
+  create-ai-fix-pr.ps1     # Branch + PR (includes plan in description)
   lib/
-    failure-triage.ts      # Step 1 summaries, grouping, selective detail
+    failure-triage.ts      # Summaries, group resolution, selective detail
     page-evidence.ts       # page-html / page-css → pageEvidence
-    failure-classifier.ts  # Deterministic locator classification
     llm-batch.ts           # Triage + fix-plan LLM prompts
+    llm.ts / llm-log.ts    # LM Studio client + prompt logs
     playwright-results.ts  # Load results.json + attachments
 tests/
   fixtures.ts              # Attach page-html + page-css on failure

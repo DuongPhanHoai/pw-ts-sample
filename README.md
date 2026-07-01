@@ -1,11 +1,36 @@
 # pw-ts-sample
 
-A sample Playwright + TypeScript end-to-end test suite that exercises [https://www.saucedemo.com](https://www.saucedemo.com) using the **Page Object Model (POM)** and **data-driven testing**.
+A sample **Playwright + TypeScript** end-to-end suite for [SauceDemo](https://www.saucedemo.com) (Page Object Model + data-driven tests), with an optional **local LLM pipeline**: analyze failures, generate a fix plan, apply patches, and open a **pull request** from CI.
 
-The suite covers login, inventory browsing, add-to-cart, the full checkout flow, and a simple API-mocking example. Login, add-to-cart, and checkout specs are parameterized over typed data fixtures, so adding a new user, product, or customer profile is a one-line change. It runs on Chromium by default and uploads an HTML report from CI.
+> **Quick start (local):** `npm run pipeline:local` → open `reports/ai-test-report.md`  
+> **Full docs:** **[docs/README.md](docs/README.md)** — index of all guides
 
-> **Run locally (tests + AI report):** see **[docs/LOCAL-RUN.md](docs/LOCAL-RUN.md)**  
-> Quick start: `npm run pipeline:local` → open `reports/ai-test-report.md`
+---
+
+## What this repo does
+
+| Layer | Description |
+|-------|-------------|
+| **Tests** | Login, inventory, cart/checkout (data-driven), smoke, API mock |
+| **Analyze** | LM Studio triage + fix plan → `reports/ai-fix-plan.json` |
+| **Apply** | LLM rewrites allowed test files → `reports/auto-fix-audit.json` |
+| **CI (optional)** | Self-hosted GitHub Actions: test → analyze → apply → re-run → **PR** into your branch |
+
+**Design:** post-failure only, policy-governed auto-heal, human review via PR. See **[docs/AI-POST-AUTO-HEAL.md](docs/AI-POST-AUTO-HEAL.md)**.
+
+---
+
+## Documentation (where to look)
+
+| You want… | Read |
+|-----------|------|
+| **Project overview & install** | **This README** |
+| **Run on laptop (no GitHub)** | [docs/LOCAL-RUN.md](docs/LOCAL-RUN.md) |
+| **CI on self-hosted runner + PR** | [docs/SELF-HOSTED-RUNNER.md](docs/SELF-HOSTED-RUNNER.md) |
+| **Analyze / apply design** | [docs/AI-POST-AUTO-HEAL.md](docs/AI-POST-AUTO-HEAL.md) |
+| **Doc index & pipeline summary** | [docs/README.md](docs/README.md) |
+
+**Use README as the front door.** Keep deep setup, troubleshooting, and design in `docs/` so the root stays scannable.
 
 ---
 
@@ -15,8 +40,8 @@ The suite covers login, inventory browsing, add-to-cart, the full checkout flow,
 pw-ts-sample/
 ├── .github/
 │   └── workflows/
-│       ├── playwright.yml          # CI: install, run tests, upload HTML report
-│       └── playwright-ai-ci.yml    # self-hosted: tests + local AI analysis
+│       ├── playwright.yml          # disabled (on: []) — cloud smoke kept for reference
+│       └── playwright-ai-ci.yml    # active: self-hosted tests + AI + auto PR
 ├── .env.example                    # LMSTUDIO_* settings, AUTO_FIX_TESTS, TEST_ENV
 ├── package.json                    # npm scripts and devDependencies
 ├── package-lock.json
@@ -27,10 +52,15 @@ pw-ts-sample/
 ├── reports/                        # JSON/JUnit + AI outputs (gitignored)
 ├── testing-standards/              # markdown + auto-heal-policy.json
 ├── docs/
-│   ├── LOCAL-RUN.md                # ← run tests + AI report on your laptop
-│   ├── AI-POST-AUTO-HEAL.md        # post-failure analyze + optional auto-heal design
-│   └── SELF-HOSTED-RUNNER.md       # GitHub self-hosted runner (optional CI)
-├── scripts/                        # analyze_results, apply_ai_fixes, local pipeline
+│   ├── README.md                   # documentation index
+│   ├── LOCAL-RUN.md                # run tests + AI on your laptop
+│   ├── AI-POST-AUTO-HEAL.md        # analyze + apply design reference
+│   └── SELF-HOSTED-RUNNER.md       # GitHub self-hosted CI + PR
+├── scripts/
+│   ├── analyze_results.ts
+│   ├── apply_ai_fixes.ts
+│   ├── create-ai-fix-pr.ps1        # branch + PR (includes plan in body)
+│   ├── run-local-pipeline.ps1
 │   └── install-self-hosted-runner.ps1
 └── tests/
     ├── cart-and-checkout.spec.ts   # data-driven: products × customers
@@ -282,10 +312,11 @@ pw-ts-sample/
 │   ├── ai-test-report.md           # main AI report: pass/fail + tests to fix
 │   ├── ai-test-report.json         # same data, machine-readable
 │   ├── ai-analysis.md              # detailed failure analysis (when failed)
-│   └── ai-fix-plan.json            # structured fix plan (when failed)
+│   ├── ai-fix-plan.json            # structured fix plan (when failed)
+│   └── auto-fix-audit.json         # what apply wrote (when auto-heal runs)
 └── .github/workflows/
-    ├── playwright.yml              # cloud smoke (ubuntu)
-    └── playwright-ai-ci.yml        # self-hosted + local AI
+    ├── playwright.yml              # disabled
+    └── playwright-ai-ci.yml        # self-hosted + AI + PR
 ```
 
 ### Environment variables
@@ -343,28 +374,29 @@ $env:AUTO_FIX_TESTS="true"      # apply fixes + re-run --last-failed
 
 Full guide: **[docs/SELF-HOSTED-RUNNER.md](docs/SELF-HOSTED-RUNNER.md)**
 
-**`.\run.cmd` = wait for jobs. It does not create reports until a workflow runs.**
+**Playwright CI with Local AI** (`playwright-ai-ci.yml`) on a Windows self-hosted runner:
 
-Quick setup:
+1. Tests → analyze → apply (`AUTO_FIX_TESTS=true` in workflow)
+2. Re-run failed tests
+3. Push branch `ai-fix/run-<runId>` and open a **PR into the branch that triggered the run**
+4. PR description includes **AI fix plan** (root cause, proposed change, hints)
 
-1. **Start runner** (leave terminal open):
+**Manual run:** Actions → **Playwright CI with Local AI** → **Run workflow** → pick branch + `TEST_ENV`.
 
-   ```powershell
-   cd C:\actions-runner\pw-ts-sample
-   .\run.cmd
-   ```
+**Runner:** `C:\actions-runner\` — start `.\run.cmd` from the folder that contains it (see self-hosted doc).
 
-2. **Trigger the AI workflow** (runner alone is not enough):  
-   **Actions** → **Playwright CI with Local AI** → **Run workflow**
-
-3. **Download reports**: Actions → that run → **Artifacts** → `reports` → open `ai-test-report.md`
-
-For reports in your repo folder without GitHub, run locally:
+Local reports without GitHub:
 
 ```powershell
 cd D:\Testing\pw-ts-sample
 npm run pipeline:local
-# → D:\Testing\pw-ts-sample\reports\ai-test-report.md
+# → reports/ai-test-report.md
+```
+
+Local PR (after apply with `AUTO_FIX_TESTS=true`):
+
+```powershell
+npm run create-ai-fix-pr   # needs GH_TOKEN or gh auth
 ```
 
 ### Auto-heal control
@@ -381,16 +413,19 @@ App/backend/data issues are never auto-fixed.
 
 ## Continuous integration
 
-`.github/workflows/playwright.yml` runs on every `push` and `pull_request` (GitHub-hosted):
+| Workflow | Status | Runner |
+|----------|--------|--------|
+| **`playwright-ai-ci.yml`** | **Active** | Self-hosted Windows (`[self-hosted, Windows, X64]`) |
+| **`playwright.yml`** | **Disabled** (`on: []`) | Was GitHub-hosted ubuntu smoke |
 
-1. Checkout
-2. Setup Node 20
-3. `npm ci`
-4. `npx playwright install --with-deps`
-5. `npx playwright test`
-6. Upload the `playwright-report/` directory as an artifact (retained 7 days)
+**Active pipeline steps:** checkout → test → `analyze:results` → `apply:ai-fixes` → re-run failed → **create PR** → upload report artifacts.
 
-For **local LLM analysis**, use `playwright-ai-ci.yml` on a **self-hosted runner** — see **[docs/SELF-HOSTED-RUNNER.md](docs/SELF-HOSTED-RUNNER.md)**.
+**Repo settings often needed:**
+
+- **Allow GitHub Actions to create and approve pull requests** (or secret `GH_TOKEN` PAT)
+- If **startup failure** on `actions/*`: allow GitHub-owned actions, or use a workflow variant with plain `git`/`npm` steps (see [SELF-HOSTED-RUNNER.md](docs/SELF-HOSTED-RUNNER.md))
+
+Details: **[docs/SELF-HOSTED-RUNNER.md](docs/SELF-HOSTED-RUNNER.md)**
 
 ---
 

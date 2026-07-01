@@ -2,6 +2,8 @@
 
 Run Playwright tests + LM Studio AI analysis on your laptop **without GitHub Actions**.
 
+**Doc index:** [docs/README.md](README.md) · **CI + PR on runner:** [SELF-HOSTED-RUNNER.md](SELF-HOSTED-RUNNER.md)
+
 **Project:** `D:\Testing\pw-ts-sample`  
 **No self-hosted runner required** for this guide (`run.cmd` is optional and only for GitHub CI).
 
@@ -157,6 +159,15 @@ Policy rules live in:
 - `testing-standards/auto-heal-policy.json`
 - `testing-standards/evaluation-criteria.md`
 
+After apply with `AUTO_FIX_TESTS=true`, open a PR locally (optional):
+
+```powershell
+$env:GH_TOKEN="ghp_..."   # or: gh auth login
+npm run create-ai-fix-pr
+```
+
+Uses `reports/auto-fix-audit.json` and **`reports/ai-fix-plan.json`** (plan section in PR body). On CI the same script runs automatically — see [SELF-HOSTED-RUNNER.md](SELF-HOSTED-RUNNER.md).
+
 ---
 
 ## TEST_ENV matrix
@@ -203,44 +214,31 @@ _No failing tests — nothing to fix._
 | `npm test` fails all tests | Check internet; open https://www.saucedemo.com in browser |
 | No `reports/` folder | Created automatically on first test run |
 | AI report empty / stub | LM Studio not responding — check model loaded |
-| Many failures — incomplete fix plan | Keep `LMSTUDIO_BATCH_SIZE=1`; raise `LMSTUDIO_TIMEOUT_SECONDS=180` if a single test times out |
+| Many failures — incomplete fix plan | Raise `LMSTUDIO_TIMEOUT_SECONDS=180`; check `reports/ai-llm-pipeline-error.json` |
 
 ### Many failures (intentional testing)
 
-Each failed test is analyzed **one at a time** by default (`LMSTUDIO_BATCH_SIZE=1`):
+Each failure is grouped in **step 1 triage**, then **one fix-plan call per group** (not one call per test):
 
 ```powershell
-# e.g. 30 failures → 30 fix-plan calls + 30 analysis calls + 1 summary
 npm test
 npm run analyze:results
-# Check: "Fix plan coverage: 30/30 tests"
-# Token summary printed at end + reports/ai-token-estimate.json
+# See reports/ai-triage.json (groups) and reports/ai-fix-plan.json (plan)
 ```
 
 Tune in `.env`:
 
 ```env
-LMSTUDIO_BATCH_SIZE=1
+LMSTUDIO_FAILURE_LIMIT=300   # optional cap on failures analyzed
 LMSTUDIO_TIMEOUT_SECONDS=120
 LMSTUDIO_MAX_ERROR_CHARS=2000
-# Optional cost estimate (USD per 1M tokens):
-# LMSTUDIO_COST_PER_1M_INPUT=0.10
-# LMSTUDIO_COST_PER_1M_OUTPUT=0.10
 ```
 
-Set `LMSTUDIO_BATCH_SIZE=5` only if your model reliably handles multi-test JSON batches.
+Legacy `LMSTUDIO_BATCH_SIZE` in `.env.example` is not used by the current two-phase analyzer.
 
-### Token / cost estimation
+### LLM usage logs
 
-Before LLM calls, the analyzer prints a **pre-estimate** (~chars÷4). After the run:
-
-| Output | Contents |
-|--------|----------|
-| Console | Actual totals if LM Studio returns `usage` |
-| `reports/ai-token-estimate.json` | Per-call breakdown (fix-plan, analysis, summary) |
-| `reports/ai-analysis.md` | Token summary at top |
-
-Set `LMSTUDIO_COST_PER_1M_INPUT` and `LMSTUDIO_COST_PER_1M_OUTPUT` for rough USD cost.
+When enabled, each LLM call is logged under `reports/llm-prompts/`. LM Studio may return token `usage` in the console via `llm-log.ts`; there is no separate `ai-token-estimate.json` file.
 
 ### Debug: see exactly what is sent to the AI
 
