@@ -1,9 +1,12 @@
+# Disabled — use playwright-ai-ci.yml (self-hosted + AI) instead.
+# To re-enable cloud CI: restore triggers under `on:` (push / pull_request).
 name: Playwright Tests
 
 on: []
 
 jobs:
   test:
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:

@@ -150,7 +150,7 @@ Push to branch `main`, `saucedemo`, or `saucedemo-ai` (see workflow `on:` trigge
 | `C:\actions-runner\pw-ts-sample\_work\...\reports\` | During/just after job (runner checkout; cleaned between runs) |
 | `D:\Testing\pw-ts-sample\reports\` | **Only** if you run `npm run pipeline:local` locally — **not** from `run.cmd` alone |
 
-**Note:** The cloud workflow **Playwright Tests** (`playwright.yml`) does **not** produce `ai-test-report.md`. Only **Playwright CI with Local AI** does.
+**Note:** Only **Playwright CI with Local AI** (self-hosted) produces `ai-test-report.md`.
 
 ### Without triggering a workflow
 
@@ -197,6 +197,8 @@ Before relying on CI:
 | Playwright browser missing | On runner machine: `npx playwright install chromium` |
 | Service can’t reach LM Studio | Run interactively or install service under your user account |
 | Token expired on config | Generate new token from runners/new page |
+| **Startup failure** — `actions/checkout` not allowed | Repo policy blocks `actions/*`. Workflow uses plain `git`/`npm` steps. Or **Settings → Actions → General** → allow **GitHub-owned** actions |
+| `403` cannot create pull requests | **Settings → Actions → General** → enable **Allow GitHub Actions to create and approve pull requests**, or secret `GH_TOKEN` (PAT) |
 
 ### Remove / reinstall runner
 
@@ -215,7 +217,7 @@ Removal token: **Settings → Actions → Runners** → runner → **Remove** �
 
 | Workflow | Runner | Purpose |
 |----------|--------|---------|
-| `playwright.yml` | `ubuntu-latest` (GitHub cloud) | Basic tests + HTML report |
+| `playwright.yml` | `ubuntu-latest` (disabled — `on: []`) | Cloud smoke tests; kept for reference |
 | `playwright-ai-ci.yml` | **self-hosted** (your laptop) | Tests + LM Studio AI report + optional auto-heal |
 
-Use **self-hosted** when you need local AI; use **ubuntu** for quick cloud smoke without LM Studio.
+Use **self-hosted** (`playwright-ai-ci.yml`) for local AI. Re-enable `playwright.yml` by restoring `on: push` / `pull_request` if needed.
