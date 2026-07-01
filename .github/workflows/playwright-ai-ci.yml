@@ -62,9 +62,35 @@ jobs:
         run: npx playwright test --last-failed
 
       - name: Log GH_TOKEN source
-        if: ${{ always() && env.AUTO_FIX_TESTS == 'true' && github.event_name != 'pull_request' }}
+        if: always()
         shell: pwsh
         run: |
+          Write-Host "=== GH_TOKEN / PR step diagnostics ==="
+          Write-Host "GITHUB_EVENT_NAME=$env:GITHUB_EVENT_NAME"
+          Write-Host "env.AUTO_FIX_TESTS=$($env:AUTO_FIX_TESTS)"
+
+          if (Test-Path .env) {
+            foreach ($line in Get-Content .env) {
+              if ($line -match '^\s*AUTO_FIX_TESTS\s*=\s*(.+)\s*$') {
+                Write-Host ".env AUTO_FIX_TESTS=$($matches[1].Trim()) (dotenv in apply step; does not set env.AUTO_FIX_TESTS for workflow if:)"
+                break
+              }
+            }
+          } else {
+            Write-Host ".env: not found in repo checkout"
+          }
+
+          if ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
+            Write-Host "SKIP PR/token steps: github.event_name is pull_request (auto-fix PR not created on PR events)."
+            exit 0
+          }
+
+          if ($env:AUTO_FIX_TESTS -ne 'true') {
+            Write-Host "SKIP PR/token steps: env.AUTO_FIX_TESTS is not 'true' (current: '$($env:AUTO_FIX_TESTS)')."
+            Write-Host "Fix: set repo variable AUTO_FIX_TESTS=true, or add a workflow step that writes AUTO_FIX_TESTS to GITHUB_ENV from .env."
+            exit 0
+          }
+
           if ("${{ secrets.GH_TOKEN }}" -ne "") {
             Write-Host "GH_TOKEN: using repository secret secrets.GH_TOKEN"
           } else {
