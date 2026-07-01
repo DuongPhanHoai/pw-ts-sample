@@ -11,7 +11,7 @@ export class CheckoutPage {
 
   /** Walk the entire checkout, filling the form with the supplied customer. */
   async checkoutFullFlow(customer: CheckoutCustomer) {
-    await this.page.click("#btn-checkout1");
+    await this.page.getByRole("button", { name: "Checkout" }).click();
     await this.page.fill("#first-name", customer.firstName);
     await this.page.fill("#last-name", customer.lastName);
     await this.page.fill("#postal-code", customer.postalCode);

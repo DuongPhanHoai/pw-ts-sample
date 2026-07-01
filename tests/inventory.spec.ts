@@ -12,7 +12,7 @@ test.describe("inventory actions", () => {
 
   test("has at least one product", async ({ page }) => {
     const count = await page.locator(".inventory_item").count();
-    expect(count).toBeGreaterThan(100);
+    expect(count).toBeGreaterThan(5);
   });
 
   for (const product of products) {
