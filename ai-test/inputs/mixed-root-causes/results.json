@@ -1,0 +1,335 @@
+{
+  "config": {
+    "configFile": "D:\\Testing\\pw-ts-sample\\playwright.config.ts",
+    "rootDir": "D:/Testing/pw-ts-sample/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/Testing/pw-ts-sample/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/Testing/pw-ts-sample/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 10000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "open": "never",
+          "outputFolder": "playwright-report"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "reports/junit-results.xml"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "reports/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.59.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "_capture-mixed-root-causes.spec.ts",
+      "file": "_capture-mixed-root-causes.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "mixed A locator typo on checkout button",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 10000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "timedOut",
+                  "duration": 10156,
+                  "error": {
+                    "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                    "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                  },
+                  "errors": [
+                    {
+                      "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                    },
+                    {
+                      "location": {
+                        "file": "D:\\Testing\\pw-ts-sample\\tests\\_capture-mixed-root-causes.spec.ts",
+                        "column": 14,
+                        "line": 16
+                      },
+                      "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n  14 |   await inventory.addItemToCart(product.slug);\n  15 |   await inventory.openCart();\n> 16 |   await page.click(\"#btn-checkout\");\n     |              ^\n  17 | });\n  18 |\n  19 | test(\"mixed B backend cart API unavailable\", async ({ page }) => {\n    at D:\\Testing\\pw-ts-sample\\tests\\_capture-mixed-root-causes.spec.ts:16:14"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-01T11:09:42.374Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-mixed-root-causes-9b281-tor-typo-on-checkout-button-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "page-html",
+                      "contentType": "text/html",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-mixed-root-causes-9b281-tor-typo-on-checkout-button-chromium\\attachments\\page-html-a414618907b8e3a1524ad1683a54303b5d1fff59.html"
+                    },
+                    {
+                      "name": "page-css",
+                      "contentType": "text/css",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-mixed-root-causes-9b281-tor-typo-on-checkout-button-chromium\\attachments\\page-css-3b0406eac12e7f120fa2e5c9256dfcf92d62471c.css"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-mixed-root-causes-9b281-tor-typo-on-checkout-button-chromium\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-mixed-root-causes-9b281-tor-typo-on-checkout-button-chromium\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "1fdf37e5c190ea3234a7-0ff105f8df9bd2f752bf",
+          "file": "_capture-mixed-root-causes.spec.ts",
+          "line": 9,
+          "column": 5
+        },
+        {
+          "title": "mixed B backend cart API unavailable",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 10000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1064,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m\n    at D:\\Testing\\pw-ts-sample\\tests\\_capture-mixed-root-causes.spec.ts:33:25",
+                    "location": {
+                      "file": "D:\\Testing\\pw-ts-sample\\tests\\_capture-mixed-root-causes.spec.ts",
+                      "column": 25,
+                      "line": 33
+                    },
+                    "snippet": "  31 |   await inventory.addItemToCart(product.slug);\n  32 |   const response = await page.request.get(\"/api/cart-status\");\n> 33 |   expect(response.ok()).toBeTruthy();\n     |                         ^\n  34 | });\n  35 |\n  36 | test(\"mixed C timing flake on summary panel\", async ({ page }) => {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\Testing\\pw-ts-sample\\tests\\_capture-mixed-root-causes.spec.ts",
+                        "column": 25,
+                        "line": 33
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m\n\n  31 |   await inventory.addItemToCart(product.slug);\n  32 |   const response = await page.request.get(\"/api/cart-status\");\n> 33 |   expect(response.ok()).toBeTruthy();\n     |                         ^\n  34 | });\n  35 |\n  36 | test(\"mixed C timing flake on summary panel\", async ({ page }) => {\n    at D:\\Testing\\pw-ts-sample\\tests\\_capture-mixed-root-causes.spec.ts:33:25"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-01T11:09:53.502Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-mixed-root-causes-4335f-ackend-cart-API-unavailable-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "page-html",
+                      "contentType": "text/html",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-mixed-root-causes-4335f-ackend-cart-API-unavailable-chromium\\attachments\\page-html-7fc1943baa33e04b54f91305e39607e4e9513b96.html"
+                    },
+                    {
+                      "name": "page-css",
+                      "contentType": "text/css",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-mixed-root-causes-4335f-ackend-cart-API-unavailable-chromium\\attachments\\page-css-60c4b12625e97dbaab38b7744e500b3f5f5e8a49.css"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-mixed-root-causes-4335f-ackend-cart-API-unavailable-chromium\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-mixed-root-causes-4335f-ackend-cart-API-unavailable-chromium\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\Testing\\pw-ts-sample\\tests\\_capture-mixed-root-causes.spec.ts",
+                    "column": 25,
+                    "line": 33
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "1fdf37e5c190ea3234a7-900f66e0a90cf781e729",
+          "file": "_capture-mixed-root-causes.spec.ts",
+          "line": 19,
+          "column": 5
+        },
+        {
+          "title": "mixed C timing flake on summary panel",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 10000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1085,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.summary_info')\nExpected: visible\nTimeout: 50ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 50ms\u001b[22m\n\u001b[2m  - waiting for locator('.summary_info')\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.summary_info')\nExpected: visible\nTimeout: 50ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 50ms\u001b[22m\n\u001b[2m  - waiting for locator('.summary_info')\u001b[22m\n\n    at D:\\Testing\\pw-ts-sample\\tests\\_capture-mixed-root-causes.spec.ts:49:43",
+                    "location": {
+                      "file": "D:\\Testing\\pw-ts-sample\\tests\\_capture-mixed-root-causes.spec.ts",
+                      "column": 43,
+                      "line": 49
+                    },
+                    "snippet": "  47 |   await Promise.all([\n  48 |     page.locator(\"#continue\").click(),\n> 49 |     expect(page.locator(\".summary_info\")).toBeVisible({ timeout: 50 }),\n     |                                           ^\n  50 |   ]);\n  51 | });\n  52 |"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\Testing\\pw-ts-sample\\tests\\_capture-mixed-root-causes.spec.ts",
+                        "column": 43,
+                        "line": 49
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.summary_info')\nExpected: visible\nTimeout: 50ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 50ms\u001b[22m\n\u001b[2m  - waiting for locator('.summary_info')\u001b[22m\n\n\n  47 |   await Promise.all([\n  48 |     page.locator(\"#continue\").click(),\n> 49 |     expect(page.locator(\".summary_info\")).toBeVisible({ timeout: 50 }),\n     |                                           ^\n  50 |   ]);\n  51 | });\n  52 |\n    at D:\\Testing\\pw-ts-sample\\tests\\_capture-mixed-root-causes.spec.ts:49:43"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-01T11:09:55.388Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-mixed-root-causes-be394-ming-flake-on-summary-panel-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "page-html",
+                      "contentType": "text/html",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-mixed-root-causes-be394-ming-flake-on-summary-panel-chromium\\attachments\\page-html-513999b71802883762c54e1222ff67947a4824b6.html"
+                    },
+                    {
+                      "name": "page-css",
+                      "contentType": "text/css",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-mixed-root-causes-be394-ming-flake-on-summary-panel-chromium\\attachments\\page-css-035a692832f203c8d8f11ce5a5dbf8a17b47ca39.css"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-mixed-root-causes-be394-ming-flake-on-summary-panel-chromium\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-mixed-root-causes-be394-ming-flake-on-summary-panel-chromium\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\Testing\\pw-ts-sample\\tests\\_capture-mixed-root-causes.spec.ts",
+                    "column": 43,
+                    "line": 49
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "1fdf37e5c190ea3234a7-08999b26f17486be99d3",
+          "file": "_capture-mixed-root-causes.spec.ts",
+          "line": 36,
+          "column": 5
+        }
+      ],
+      "suites": []
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "expected": 0,
+    "unexpected": 3,
+    "skipped": 0,
+    "flaky": 0
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "caseLabel": "trap-test-data-issue",
+  "evalSteps": [
+    "triage",
+    "fixPlan"
+  ],
+  "triage": {
+    "groups": [
+      {
+        "expectedGroupId": "standard-user-credentials",
+        "expectedMembers": [
+          "login.spec.ts > login (data-driven) > login: standard_user (success)"
+        ],
+        "expectedRootCause": "Login test data uses wrong password for standard_user while expecting success.",
+        "expectedCategory": "test-data-issue",
+        "expectedDetailFieldsNeeded": [
+          "errorContextMd"
+        ]
+      }
+    ]
+  },
+  "fixPlan": {
+    "items": [
+      {
+        "groupId": "standard-user-credentials",
+        "file": "tests/data/test/users.ts",
+        "canAutoHeal": false,
+        "expectedPolicyOutcome": "manual-review-required"
+      }
+    ]
+  }
+}

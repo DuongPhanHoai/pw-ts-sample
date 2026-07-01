@@ -1,0 +1,31 @@
+{
+  "caseLabel": "triage-detail-error-context-only",
+  "evalSteps": [
+    "triage"
+  ],
+  "triage": {
+    "groups": [
+      {
+        "expectedGroupId": "inventory-unavailable",
+        "expectedMembers": [
+          "_capture-backend-trap.spec.ts > backend cart API unavailable"
+        ],
+        "expectedRootCause": "Cart status API returns HTTP 503; backend cart service is unavailable.",
+        "expectedCategory": "backend-issue",
+        "expectedDetailFieldsNeeded": [
+          "errorContextMd"
+        ]
+      }
+    ]
+  },
+  "fixPlan": {
+    "items": [
+      {
+        "groupId": "inventory-unavailable",
+        "file": "tests/pages/LoginPage.ts",
+        "canAutoHeal": false,
+        "expectedPolicyOutcome": "manual-review-required"
+      }
+    ]
+  }
+}

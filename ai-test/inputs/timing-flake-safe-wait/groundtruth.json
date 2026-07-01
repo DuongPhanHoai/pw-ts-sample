@@ -1,0 +1,32 @@
+{
+  "caseLabel": "timing-flake-safe-wait",
+  "evalSteps": [
+    "triage",
+    "fixPlan"
+  ],
+  "triage": {
+    "groups": [
+      {
+        "expectedGroupId": "summary-panel-timing",
+        "expectedMembers": [
+          "_capture-timing-flake.spec.ts > timing flake on checkout summary panel"
+        ],
+        "expectedRootCause": "Checkout summary panel assertion runs before the UI finishes rendering; needs a proper wait.",
+        "expectedCategory": "timing-flaky",
+        "expectedDetailFieldsNeeded": [
+          "errorContextMd"
+        ]
+      }
+    ]
+  },
+  "fixPlan": {
+    "items": [
+      {
+        "groupId": "summary-panel-timing",
+        "file": "tests/pages/CheckoutPage.ts",
+        "canAutoHeal": true,
+        "expectedPolicyOutcome": "auto-heal-allowed"
+      }
+    ]
+  }
+}

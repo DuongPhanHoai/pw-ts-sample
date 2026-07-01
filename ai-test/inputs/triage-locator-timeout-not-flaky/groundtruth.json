@@ -1,0 +1,22 @@
+{
+  "caseLabel": "triage-locator-timeout-not-flaky",
+  "evalSteps": [
+    "triage"
+  ],
+  "triage": {
+    "groups": [
+      {
+        "expectedGroupId": "checkout-button-locator-typo",
+        "expectedMembers": [
+          "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Sauce Labs Backpack\" as Test User"
+        ],
+        "expectedRootCause": "Checkout flow uses a wrong checkout button selector; Playwright times out waiting for locator.",
+        "expectedCategory": "locators-broken",
+        "expectedDetailFieldsNeeded": [
+          "pageEvidence",
+          "errorContextMd"
+        ]
+      }
+    ]
+  }
+}

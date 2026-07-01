@@ -2,7 +2,7 @@
 
 Saved **Playwright failure output** for offline LLM eval. Each **folder name is the case label**.
 
-Example: `locator-typo`, `duplicate-matrix-locator`, `trap-backend-api-failure`
+Fixtures live under **`ai-test/inputs/<case-label>/`** (see [TESTING-SCENARIOS.md](../docs/TESTING-SCENARIOS.md)). To add a new case later: run Playwright with an intentional failure, copy `reports/results.json` and attachments into a new folder, add `groundtruth.json`.
 
 ---
 

@@ -99,29 +99,32 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "timedOut",
-                      "duration": 10159,
+                      "status": "failed",
+                      "duration": 6282,
                       "error": {
-                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
-                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.complete-header')\nExpected: \u001b[32m\"Thank\u001b[7ms\u001b[27m for your \u001b[7mpurchase\u001b[27m!\"\u001b[39m\nReceived: \u001b[31m\"Thank\u001b[7m you\u001b[27m for your \u001b[7morder\u001b[27m!\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.complete-header')\u001b[22m\n\u001b[2m    9 × locator resolved to <h2 class=\"complete-header\" data-test=\"complete-header\">Thank you for your order!</h2>\u001b[22m\n\u001b[2m      - unexpected value \"Thank you for your order!\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.complete-header')\nExpected: \u001b[32m\"Thank\u001b[7ms\u001b[27m for your \u001b[7mpurchase\u001b[27m!\"\u001b[39m\nReceived: \u001b[31m\"Thank\u001b[7m you\u001b[27m for your \u001b[7morder\u001b[27m!\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.complete-header')\u001b[22m\n\u001b[2m    9 × locator resolved to <h2 class=\"complete-header\" data-test=\"complete-header\">Thank you for your order!</h2>\u001b[22m\n\u001b[2m      - unexpected value \"Thank you for your order!\"\u001b[22m\n\n    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:22:57)\n    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:9",
+                        "location": {
+                          "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                          "column": 57,
+                          "line": 22
+                        },
+                        "snippet": "   at pages\\CheckoutPage.ts:22\n\n  20 |\n  21 |     await this.page.click(\"#finish\");\n> 22 |     await expect(this.page.locator(\".complete-header\")).toHaveText(\n     |                                                         ^\n  23 |       \"Thanks for your purchase!\",\n  24 |     );\n  25 |   }"
                       },
                       "errors": [
                         {
-                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
-                        },
-                        {
                           "location": {
                             "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
-                            "column": 21,
-                            "line": 14
+                            "column": 57,
+                            "line": 22
                           },
-                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n   at pages\\CheckoutPage.ts:14\n\n  12 |   /** Walk the entire checkout, filling the form with the supplied customer. */\n  13 |   async checkoutFullFlow(customer: CheckoutCustomer) {\n> 14 |     await this.page.click(\"#btn-checkout\");\n     |                     ^\n  15 |     await this.page.fill(\"#first-name\", customer.firstName);\n  16 |     await this.page.fill(\"#last-name\", customer.lastName);\n  17 |     await this.page.fill(\"#postal-code\", customer.postalCode);\n    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\n    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24"
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.complete-header')\nExpected: \u001b[32m\"Thank\u001b[7ms\u001b[27m for your \u001b[7mpurchase\u001b[27m!\"\u001b[39m\nReceived: \u001b[31m\"Thank\u001b[7m you\u001b[27m for your \u001b[7morder\u001b[27m!\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.complete-header')\u001b[22m\n\u001b[2m    9 × locator resolved to <h2 class=\"complete-header\" data-test=\"complete-header\">Thank you for your order!</h2>\u001b[22m\n\u001b[2m      - unexpected value \"Thank you for your order!\"\u001b[22m\n\n\n   at pages\\CheckoutPage.ts:22\n\n  20 |\n  21 |     await this.page.click(\"#finish\");\n> 22 |     await expect(this.page.locator(\".complete-header\")).toHaveText(\n     |                                                         ^\n  23 |       \"Thanks for your purchase!\",\n  24 |     );\n  25 |   }\n    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:22:57)\n    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:9"
                         }
                       ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-01T11:00:30.455Z",
+                      "startTime": "2026-07-01T11:05:06.917Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -149,7 +152,12 @@
                           "contentType": "application/zip",
                           "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-514e9--Labs-Backpack-as-Test-User-chromium\\trace.zip"
                         }
-                      ]
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                        "column": 57,
+                        "line": 22
+                      }
                     }
                   ],
                   "status": "unexpected"

@@ -1,0 +1,175 @@
+{
+  "config": {
+    "configFile": "D:\\Testing\\pw-ts-sample\\playwright.config.ts",
+    "rootDir": "D:/Testing/pw-ts-sample/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/Testing/pw-ts-sample/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/Testing/pw-ts-sample/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 10000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "open": "never",
+          "outputFolder": "playwright-report"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "reports/junit-results.xml"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "reports/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.59.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "_capture-backend-trap.spec.ts",
+      "file": "_capture-backend-trap.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "backend cart API unavailable",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 10000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1132,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m\n    at D:\\Testing\\pw-ts-sample\\tests\\_capture-backend-trap.spec.ts:19:25",
+                    "location": {
+                      "file": "D:\\Testing\\pw-ts-sample\\tests\\_capture-backend-trap.spec.ts",
+                      "column": 25,
+                      "line": 19
+                    },
+                    "snippet": "  17 |   await inventory.addItemToCart(\"sauce-labs-backpack\");\n  18 |   const response = await page.request.get(\"/api/cart-status\");\n> 19 |   expect(response.ok()).toBeTruthy();\n     |                         ^\n  20 | });\n  21 |"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\Testing\\pw-ts-sample\\tests\\_capture-backend-trap.spec.ts",
+                        "column": 25,
+                        "line": 19
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m\n\n  17 |   await inventory.addItemToCart(\"sauce-labs-backpack\");\n  18 |   const response = await page.request.get(\"/api/cart-status\");\n> 19 |   expect(response.ok()).toBeTruthy();\n     |                         ^\n  20 | });\n  21 |\n    at D:\\Testing\\pw-ts-sample\\tests\\_capture-backend-trap.spec.ts:19:25"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-01T11:09:34.713Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-backend-trap-backend-cart-API-unavailable-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "page-html",
+                      "contentType": "text/html",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-backend-trap-backend-cart-API-unavailable-chromium\\attachments\\page-html-ee5e557abc03bfa1bc553570b079c91302791eb7.html"
+                    },
+                    {
+                      "name": "page-css",
+                      "contentType": "text/css",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-backend-trap-backend-cart-API-unavailable-chromium\\attachments\\page-css-42db9fa038c4f5270273ce525cbbc77b4ef95391.css"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-backend-trap-backend-cart-API-unavailable-chromium\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-backend-trap-backend-cart-API-unavailable-chromium\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\Testing\\pw-ts-sample\\tests\\_capture-backend-trap.spec.ts",
+                    "column": 25,
+                    "line": 19
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "f4fd079090e2723ee745-b6be0845ea5b866531b9",
+          "file": "_capture-backend-trap.spec.ts",
+          "line": 5,
+          "column": 5
+        }
+      ],
+      "suites": []
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "expected": 0,
+    "unexpected": 1,
+    "skipped": 0,
+    "flaky": 0
+  }
+}

@@ -1,0 +1,175 @@
+{
+  "config": {
+    "configFile": "D:\\Testing\\pw-ts-sample\\playwright.config.ts",
+    "rootDir": "D:/Testing/pw-ts-sample/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/Testing/pw-ts-sample/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/Testing/pw-ts-sample/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 10000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "open": "never",
+          "outputFolder": "playwright-report"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "reports/junit-results.xml"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "reports/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.59.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "_capture-timing-flake.spec.ts",
+      "file": "_capture-timing-flake.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "timing flake on checkout summary panel",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 10000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1095,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.summary_info')\nExpected: visible\nTimeout: 50ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 50ms\u001b[22m\n\u001b[2m  - waiting for locator('.summary_info')\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.summary_info')\nExpected: visible\nTimeout: 50ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 50ms\u001b[22m\n\u001b[2m  - waiting for locator('.summary_info')\u001b[22m\n\n    at D:\\Testing\\pw-ts-sample\\tests\\_capture-timing-flake.spec.ts:22:43",
+                    "location": {
+                      "file": "D:\\Testing\\pw-ts-sample\\tests\\_capture-timing-flake.spec.ts",
+                      "column": 43,
+                      "line": 22
+                    },
+                    "snippet": "  20 |   await Promise.all([\n  21 |     page.locator(\"#continue\").click(),\n> 22 |     expect(page.locator(\".summary_info\")).toBeVisible({ timeout: 50 }),\n     |                                           ^\n  23 |   ]);\n  24 | });\n  25 |"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\Testing\\pw-ts-sample\\tests\\_capture-timing-flake.spec.ts",
+                        "column": 43,
+                        "line": 22
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.summary_info')\nExpected: visible\nTimeout: 50ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 50ms\u001b[22m\n\u001b[2m  - waiting for locator('.summary_info')\u001b[22m\n\n\n  20 |   await Promise.all([\n  21 |     page.locator(\"#continue\").click(),\n> 22 |     expect(page.locator(\".summary_info\")).toBeVisible({ timeout: 50 }),\n     |                                           ^\n  23 |   ]);\n  24 | });\n  25 |\n    at D:\\Testing\\pw-ts-sample\\tests\\_capture-timing-flake.spec.ts:22:43"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-01T11:09:38.419Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-timing-flake-timing-flake-on-checkout-summary-panel-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "page-html",
+                      "contentType": "text/html",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-timing-flake-timing-flake-on-checkout-summary-panel-chromium\\attachments\\page-html-751966561af7b50571fc61495ce4037c1f88a5db.html"
+                    },
+                    {
+                      "name": "page-css",
+                      "contentType": "text/css",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-timing-flake-timing-flake-on-checkout-summary-panel-chromium\\attachments\\page-css-8dff582e3dbc0ab985b4c6c7f53540e3cef24e39.css"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-timing-flake-timing-flake-on-checkout-summary-panel-chromium\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\Testing\\pw-ts-sample\\test-results\\_capture-timing-flake-timing-flake-on-checkout-summary-panel-chromium\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\Testing\\pw-ts-sample\\tests\\_capture-timing-flake.spec.ts",
+                    "column": 43,
+                    "line": 22
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "7850acd822ee79925a22-62626c4625dd05ec0b9a",
+          "file": "_capture-timing-flake.spec.ts",
+          "line": 9,
+          "column": 5
+        }
+      ],
+      "suites": []
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "expected": 0,
+    "unexpected": 1,
+    "skipped": 0,
+    "flaky": 0
+  }
+}

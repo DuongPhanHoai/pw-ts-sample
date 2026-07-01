@@ -72,20 +72,20 @@
   },
   "suites": [
     {
-      "title": "cart-and-checkout.spec.ts",
-      "file": "cart-and-checkout.spec.ts",
+      "title": "login.spec.ts",
+      "file": "login.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "cart and checkout (data-driven)",
-          "file": "cart-and-checkout.spec.ts",
-          "line": 7,
+          "title": "login (data-driven)",
+          "file": "login.spec.ts",
+          "line": 5,
           "column": 6,
           "specs": [
             {
-              "title": "checkout \"Sauce Labs Backpack\" as Test User",
+              "title": "login: standard_user (success)",
               "ok": false,
               "tags": [],
               "tests": [
@@ -100,7 +100,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "timedOut",
-                      "duration": 10159,
+                      "duration": 10157,
                       "error": {
                         "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
                         "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
@@ -111,43 +111,43 @@
                         },
                         {
                           "location": {
-                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\LoginPage.ts",
                             "column": 21,
-                            "line": 14
+                            "line": 19
                           },
-                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n   at pages\\CheckoutPage.ts:14\n\n  12 |   /** Walk the entire checkout, filling the form with the supplied customer. */\n  13 |   async checkoutFullFlow(customer: CheckoutCustomer) {\n> 14 |     await this.page.click(\"#btn-checkout\");\n     |                     ^\n  15 |     await this.page.fill(\"#first-name\", customer.firstName);\n  16 |     await this.page.fill(\"#last-name\", customer.lastName);\n  17 |     await this.page.fill(\"#postal-code\", customer.postalCode);\n    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\n    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24"
+                          "message": "Error: page.waitForURL: Test timeout of 10000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/inventory.html\" until \"load\"\n============================================================\n\n   at pages\\LoginPage.ts:19\n\n  17 |   /** Wait for the inventory page to load — call after a successful login. */\n  18 |   async expectInventoryLoaded() {\n> 19 |     await this.page.waitForURL(\"**/inventory.html\", { waitUntil: \"load\" });\n     |                     ^\n  20 |     await expect(this.page.locator(\".inventory_list\")).toBeVisible();\n  21 |   }\n  22 |\n    at LoginPage.expectInventoryLoaded (D:\\Testing\\pw-ts-sample\\tests\\pages\\LoginPage.ts:19:21)\n    at D:\\Testing\\pw-ts-sample\\tests\\login.spec.ts:14:21"
                         }
                       ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-01T11:00:30.455Z",
+                      "startTime": "2026-07-01T11:05:15.884Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-514e9--Labs-Backpack-as-Test-User-chromium\\test-failed-1.png"
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\login-login-data-driven-login-standard-user-success--chromium\\test-failed-1.png"
                         },
                         {
                           "name": "page-html",
                           "contentType": "text/html",
-                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-514e9--Labs-Backpack-as-Test-User-chromium\\attachments\\page-html-573e8445a35462ed942756a003c0b84580cdb6c4.html"
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\login-login-data-driven-login-standard-user-success--chromium\\attachments\\page-html-67844eb816c0e32b1bc6feeb585171e3686f759e.html"
                         },
                         {
                           "name": "page-css",
                           "contentType": "text/css",
-                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-514e9--Labs-Backpack-as-Test-User-chromium\\attachments\\page-css-05e5099ad052b23f5b15bfc571f8f373fc1fd145.css"
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\login-login-data-driven-login-standard-user-success--chromium\\attachments\\page-css-64c32a9c1ca934c01d6b583641207479d6638a1f.css"
                         },
                         {
                           "name": "error-context",
                           "contentType": "text/markdown",
-                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-514e9--Labs-Backpack-as-Test-User-chromium\\error-context.md"
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\login-login-data-driven-login-standard-user-success--chromium\\error-context.md"
                         },
                         {
                           "name": "trace",
                           "contentType": "application/zip",
-                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-514e9--Labs-Backpack-as-Test-User-chromium\\trace.zip"
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\login-login-data-driven-login-standard-user-success--chromium\\trace.zip"
                         }
                       ]
                     }
@@ -155,10 +155,10 @@
                   "status": "unexpected"
                 }
               ],
-              "id": "8720fd7caf66f8b3d168-04e2cea0e0f7c8087aee",
-              "file": "cart-and-checkout.spec.ts",
-              "line": 10,
-              "column": 11
+              "id": "41d3fd2474a19feb00a1-1c6b32e4853205df2bc9",
+              "file": "login.spec.ts",
+              "line": 8,
+              "column": 9
             }
           ],
           "suites": []

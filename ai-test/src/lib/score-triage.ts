@@ -16,6 +16,9 @@ export interface GroundTruth {
   triage?: {
     groups: GroundTruthGroup[];
   };
+  fixPlan?: {
+    items: Array<Record<string, unknown>>;
+  };
 }
 
 export function loadGroundTruth(caseDir: string): GroundTruth | undefined {

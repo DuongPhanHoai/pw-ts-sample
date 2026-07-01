@@ -1,0 +1,45 @@
+{
+  "caseLabel": "mixed-root-causes",
+  "evalSteps": [
+    "triage",
+    "fixPlan"
+  ],
+  "triage": {
+    "groups": [
+      {
+        "expectedGroupId": "mixed-locator",
+        "expectedMembers": [
+          "_capture-mixed-root-causes.spec.ts > mixed A locator typo on checkout button"
+        ],
+        "expectedRootCause": "Wrong checkout button selector in mixed locator test.",
+        "expectedCategory": "locators-broken",
+        "expectedDetailFieldsNeeded": [
+          "pageEvidence",
+          "errorContextMd"
+        ]
+      },
+      {
+        "expectedGroupId": "mixed-backend",
+        "expectedMembers": [
+          "_capture-mixed-root-causes.spec.ts > mixed B backend cart API unavailable"
+        ],
+        "expectedRootCause": "Cart status API returns HTTP 503.",
+        "expectedCategory": "backend-issue",
+        "expectedDetailFieldsNeeded": [
+          "errorContextMd"
+        ]
+      },
+      {
+        "expectedGroupId": "mixed-timing",
+        "expectedMembers": [
+          "_capture-mixed-root-causes.spec.ts > mixed C timing flake on summary panel"
+        ],
+        "expectedRootCause": "Summary panel checked before render completes.",
+        "expectedCategory": "timing-flaky",
+        "expectedDetailFieldsNeeded": [
+          "errorContextMd"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "caseLabel": "trap-business-logic-change",
+  "evalSteps": [
+    "triage",
+    "fixPlan"
+  ],
+  "triage": {
+    "groups": [
+      {
+        "expectedGroupId": "order-complete-text-changed",
+        "expectedMembers": [
+          "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Sauce Labs Backpack\" as Test User"
+        ],
+        "expectedRootCause": "Assertion expects outdated order-complete copy; visible behavior or requirements changed.",
+        "expectedCategory": "business-logic-change",
+        "expectedDetailFieldsNeeded": [
+          "errorContextMd",
+          "pageEvidence"
+        ]
+      }
+    ]
+  },
+  "fixPlan": {
+    "items": [
+      {
+        "groupId": "order-complete-text-changed",
+        "file": "tests/pages/CheckoutPage.ts",
+        "canAutoHeal": false,
+        "expectedPolicyOutcome": "manual-review-required"
+      }
+    ]
+  }
+}

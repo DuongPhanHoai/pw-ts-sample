@@ -34,7 +34,7 @@ The analyze pipeline has **two LLM steps**. Scenarios below say which step(s) th
 | 7 | `trap-unsafe-skip` | Patch (Phase 2) | — | — | no skip, assertion preservation |
 | 8 | `triage-under-split-duplicates` | **Triage** | grouping recall | — | — |
 
-Captured from current run: `locator-typo`, `duplicate-matrix-locator` (see `ai-test/inputs/`).
+Fixtures on disk: **12 cases** under `ai-test/inputs/` (see scenario matrix below).
 
 ---
 
