@@ -38,6 +38,72 @@ function Read-AuditSummary {
   }
 }
 
+function Read-FixPlan {
+  $planPath = Join-Path $Root "reports\ai-fix-plan.json"
+  if (-not (Test-Path $planPath)) { return @() }
+  try {
+    $raw = Get-Content $planPath -Raw | ConvertFrom-Json
+    if ($raw.plan) { return @($raw.plan) }
+    return @()
+  } catch {
+    return @()
+  }
+}
+
+function Format-PlanSection {
+  param(
+    [array]$PlanItems,
+    [array]$Applied,
+    [string[]]$ChangedFiles
+  )
+
+  if (-not $PlanItems -or $PlanItems.Count -eq 0) { return @() }
+
+  $appliedTests = @($Applied | ForEach-Object { $_.testName } | Where-Object { $_ })
+  $changedSet = @{}
+  foreach ($f in $ChangedFiles) {
+    $norm = ($f -replace '\\', '/').Trim()
+    if ($norm) { $changedSet[$norm] = $true }
+  }
+
+  $matched = @($PlanItems | Where-Object {
+    $item = $_
+    if ($appliedTests -contains $item.testName) { return $true }
+    foreach ($hint in @($item.codeChangeHints)) {
+      $hintPath = ($hint.filePath -replace '\\', '/').Trim()
+      if ($changedSet.ContainsKey($hintPath)) { return $true }
+    }
+    return $false
+  })
+
+  if ($matched.Count -eq 0) { return @() }
+
+  $lines = @("### AI fix plan")
+  foreach ($item in $matched) {
+    $lines += ""
+    $lines += "#### $($item.testName)"
+    if ($item.category) {
+      $conf = if ($null -ne $item.confidence) { " (confidence: $($item.confidence))" } else { "" }
+      $lines += "- **Category:** $($item.category)$conf"
+    }
+    if ($item.rootCauseSummary) {
+      $lines += "- **Root cause:** $($item.rootCauseSummary)"
+    }
+    if ($item.proposedChangeSummary) {
+      $lines += "- **Proposed change:** $($item.proposedChangeSummary)"
+    }
+    foreach ($hint in @($item.codeChangeHints)) {
+      if (-not $hint.filePath) { continue }
+      $lines += "- **File:** ``$($hint.filePath)``"
+      if ($hint.reason) { $lines += "  - Reason: $($hint.reason)" }
+      if ($hint.suggestedSelectorOrChange) {
+        $lines += "  - Suggested: ``$($hint.suggestedSelectorOrChange)``"
+      }
+    }
+  }
+  return $lines
+}
+
 $applied = Read-AuditSummary
 $changedTests = git status --porcelain -- tests/ 2>$null
 if (-not $changedTests) {
@@ -78,6 +144,9 @@ if ($summaryLines.Count -eq 0) {
   foreach ($f in $fileList) { $summaryLines += "- $f" }
 }
 
+$fixPlan = Read-FixPlan
+$planSection = Format-PlanSection -PlanItems $fixPlan -Applied $applied -ChangedFiles $fileList
+
 $commitBody = @(
   "Automated test fixes from Playwright AI auto-heal.",
   "",
@@ -99,12 +168,18 @@ $remote = "origin"
 git push -u $remote $branch
 
 $prTitle = "fix(tests): AI auto-heal (run $runId)"
-$prBody = @(
+$prBodyParts = @(
   "## Summary",
   "AI auto-heal applied Playwright test fixes after a failed run.",
   "",
   "### Changed files",
-  ($summaryLines -join "`n"),
+  ($summaryLines -join "`n")
+)
+if ($planSection.Count -gt 0) {
+  $prBodyParts += ""
+  $prBodyParts += $planSection
+}
+$prBodyParts += @(
   "",
   "### Context",
   "- **Run ID:** $runId",
@@ -114,7 +189,8 @@ $prBody = @(
   "Review diffs and merge if fixes look correct. Re-run Playwright CI on this branch before merging.",
   "",
   "Reports are attached to the workflow artifact ``reports`` on the triggering run."
-) -join "`n"
+)
+$prBody = $prBodyParts -join "`n"
 
 if ($env:GITHUB_ACTIONS -eq "true") {
   $token = if ($env:GH_TOKEN) { $env:GH_TOKEN } else { $env:GITHUB_TOKEN }
