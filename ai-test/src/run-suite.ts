@@ -158,6 +158,8 @@ async function main(): Promise<void> {
 
   const minScore = flags["min-score"] ? Number(flags["min-score"]) : undefined;
 
+  const startedAt = new Date();
+
   console.log(`AI test suite — triage LLM, cases=${labels.join(", ")}`);
   console.log(`Model: ${process.env.LMSTUDIO_MODEL}\n`);
 
@@ -166,6 +168,8 @@ async function main(): Promise<void> {
     results.push(await runCase(label, minScore));
   }
 
+  const finishedAt = new Date();
+
   const scored = results.filter((r) => r.metrics?.triageScore !== undefined);
   const averageTriageScore =
     scored.length > 0
@@ -173,7 +177,8 @@ async function main(): Promise<void> {
       : undefined;
 
   const report: SuiteReport = {
-    generatedAt: new Date().toISOString(),
+    startedAt: startedAt.toISOString(),
+    generatedAt: finishedAt.toISOString(),
     model: process.env.LMSTUDIO_MODEL,
     caseCount: results.length,
     passed: results.filter((r) => r.status === "pass").length,
@@ -190,7 +195,9 @@ async function main(): Promise<void> {
   console.log(renderSuiteMarkdown(report).split("\n").slice(0, 16).join("\n"));
   console.log(`\nWrote reports/ai-test-suite.json`);
   console.log(`Wrote reports/ai-test-suite.md`);
-  console.log(`Appended history: reports/ai-test-history/summary.csv`);
+  console.log(`Updated history: reports/ai-test-history/model_eval_history.csv`);
+  console.log(`Run column: ${history.runColumn}`);
+  console.log(`Appended run log: reports/ai-test-history/model_eval_runs.csv`);
   console.log(`Run snapshot: reports/ai-test-history/${history.runId}/`);
 
   if (flags.open === "true") {

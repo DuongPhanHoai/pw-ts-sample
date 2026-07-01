@@ -15,5 +15,6 @@ export const paths = {
   suiteReportMd: path.join(projectRoot, "reports", "ai-test-suite.md"),
   suiteCaseDir: path.join(projectRoot, "reports", "ai-test-suite"),
   suiteHistoryDir: path.join(projectRoot, "reports", "ai-test-history"),
-  suiteHistoryCsv: path.join(projectRoot, "reports", "ai-test-history", "summary.csv"),
+  modelEvalHistoryCsv: path.join(projectRoot, "reports", "ai-test-history", "model_eval_history.csv"),
+  modelEvalRunsCsv: path.join(projectRoot, "reports", "ai-test-history", "model_eval_runs.csv"),
 };

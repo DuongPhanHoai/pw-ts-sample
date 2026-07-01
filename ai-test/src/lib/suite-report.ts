@@ -20,6 +20,7 @@ export interface SuiteCaseResult {
 }
 
 export interface SuiteReport {
+  startedAt?: string;
   generatedAt: string;
   model?: string;
   caseCount: number;
@@ -101,7 +102,8 @@ export function renderSuiteMarkdown(report: SuiteReport): string {
     "",
     "- JSON: `reports/ai-test-suite.json`",
     "- Per-case triage: `reports/ai-test-suite/<case-label>/triage.json`",
-    "- History CSV: `reports/ai-test-history/summary.csv` (one row per case per run; filter by `model`)",
+    "- History matrix: `reports/ai-test-history/model_eval_history.csv` (one column per `{model} @ {timestamp}` run)",
+    "- Run log: `reports/ai-test-history/model_eval_runs.csv`",
     "",
     "Open this report:",
     "",
