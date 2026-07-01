@@ -94,11 +94,7 @@ git commit -m "fix(tests): AI auto-heal from Playwright run $runId" -m $commitBo
 $remote = "origin"
 git push -u $remote $branch
 
-if (-not $ghAvailable) {
-  Write-Warning "Branch pushed: $branch — install GitHub CLI (gh) to open a PR automatically."
-  exit 0
-}
-
+$prTitle = "fix(tests): AI auto-heal (run $runId)"
 $prBody = @(
   "## Summary",
   "AI auto-heal applied Playwright test fixes after a failed run.",
@@ -116,6 +112,32 @@ $prBody = @(
   "Reports are attached to the workflow artifact ``reports`` on the triggering run."
 ) -join "`n"
 
+if ($env:GITHUB_ACTIONS -eq "true") {
+  $token = if ($env:GH_TOKEN) { $env:GH_TOKEN } else { $env:GITHUB_TOKEN }
+  $repo = $env:GITHUB_REPOSITORY
+  $owner = ($repo -split "/")[0]
+  $headers = @{
+    Authorization = "Bearer $token"
+    Accept        = "application/vnd.github+json"
+    "X-GitHub-Api-Version" = "2022-11-28"
+  }
+  $existing = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/pulls?head=${owner}:$branch&state=open" -Headers $headers -Method Get
+  if ($existing -and $existing.Count -gt 0) {
+    Write-Host "PR already exists: #$($existing[0].number) $($existing[0].html_url)"
+    exit 0
+  }
+  $created = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/pulls" -Headers $headers -Method Post -Body (@{
+    title = $prTitle; head = $branch; base = $baseBranch; body = $prBody
+  } | ConvertTo-Json -Depth 4) -ContentType "application/json; charset=utf-8"
+  Write-Host "Pull request created: #$($created.number) $($created.html_url)"
+  exit 0
+}
+
+if (-not $ghAvailable) {
+  Write-Warning "Branch pushed: $branch — install GitHub CLI (gh) to open a PR automatically."
+  exit 0
+}
+
 $existing = gh pr list --head $branch --json number --jq ".[0].number" 2>$null
 if ($existing) {
   Write-Host "PR already exists: #$existing"
@@ -126,7 +148,7 @@ if ($existing) {
 gh pr create `
   --base $baseBranch `
   --head $branch `
-  --title "fix(tests): AI auto-heal (run $runId)" `
+  --title $prTitle `
   --body $prBody
 
 Write-Host "Pull request created for branch $branch (base: $baseBranch)."
