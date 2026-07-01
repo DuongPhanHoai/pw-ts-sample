@@ -52,16 +52,20 @@ $runId = if ($env:GITHUB_RUN_ID) { $env:GITHUB_RUN_ID } else { "local-" + (Get-D
 $attempt = if ($env:GITHUB_RUN_ATTEMPT) { $env:GITHUB_RUN_ATTEMPT } else { "1" }
 $branch = "ai-fix/run-$runId-$attempt"
 
-$baseBranch = $env:GITHUB_BASE_REF
-if (-not $baseBranch) {
-  $baseBranch = $env:GITHUB_REF_NAME
+# PR into the branch that triggered the workflow (e.g. saucedemo-ai), not main.
+$baseBranch = $env:AI_FIX_PR_BASE
+if (-not $baseBranch) { $baseBranch = $env:GITHUB_HEAD_REF }
+if (-not $baseBranch) { $baseBranch = $env:GITHUB_REF_NAME }
+if (-not $baseBranch -and $env:GITHUB_REF -match '^refs/heads/(.+)$') {
+  $baseBranch = $Matches[1]
 }
-if (-not $baseBranch) {
+if (-not $baseBranch -or $baseBranch -eq "HEAD") {
   $baseBranch = (git rev-parse --abbrev-ref HEAD 2>$null)
 }
-if ($baseBranch -eq "HEAD" -or $branch -eq $baseBranch) {
-  $baseBranch = "main"
+if (-not $baseBranch -or $baseBranch -eq "HEAD") {
+  Write-Error "Cannot determine PR base branch (trigger branch). Set AI_FIX_PR_BASE in workflow."
 }
+Write-Host "PR base branch (trigger branch): $baseBranch"
 
 $fileList = ($changedTests -split "`n" | ForEach-Object { ($_ -replace '^\S+\s+', '').Trim() } | Where-Object { $_ })
 $summaryLines = @()
@@ -116,21 +120,40 @@ if ($env:GITHUB_ACTIONS -eq "true") {
   $token = if ($env:GH_TOKEN) { $env:GH_TOKEN } else { $env:GITHUB_TOKEN }
   $repo = $env:GITHUB_REPOSITORY
   $owner = ($repo -split "/")[0]
+  $manualPrUrl = "https://github.com/$repo/compare/$baseBranch...$branch?expand=1"
   $headers = @{
     Authorization = "Bearer $token"
     Accept        = "application/vnd.github+json"
     "X-GitHub-Api-Version" = "2022-11-28"
   }
-  $existing = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/pulls?head=${owner}:$branch&state=open" -Headers $headers -Method Get
-  if ($existing -and $existing.Count -gt 0) {
-    Write-Host "PR already exists: #$($existing[0].number) $($existing[0].html_url)"
+  try {
+    $existing = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/pulls?head=${owner}:$branch&state=open" -Headers $headers -Method Get
+    if ($existing -and $existing.Count -gt 0) {
+      Write-Host "PR already exists: #$($existing[0].number) $($existing[0].html_url)"
+      exit 0
+    }
+    $created = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/pulls" -Headers $headers -Method Post -Body (@{
+      title = $prTitle; head = $branch; base = $baseBranch; body = $prBody
+    } | ConvertTo-Json -Depth 4) -ContentType "application/json; charset=utf-8"
+    Write-Host "Pull request created: #$($created.number) $($created.html_url)"
     exit 0
+  } catch {
+    $msg = $_.ErrorDetails.Message
+    if (-not $msg) { $msg = $_.Exception.Message }
+    Write-Warning "Could not create PR via API: $msg"
+    if ($msg -match "not permitted to create or approve pull requests") {
+      Write-Host ""
+      Write-Host "Branch pushed successfully: $branch"
+      Write-Host "Enable PR creation for GITHUB_TOKEN:"
+      Write-Host "  Repo Settings -> Actions -> General -> Workflow permissions"
+      Write-Host "  -> check 'Allow GitHub Actions to create and approve pull requests'"
+      Write-Host "Or add a PAT as repository secret GH_TOKEN (repo + pull_requests scope)."
+      Write-Host ""
+      Write-Host "Open PR manually: $manualPrUrl"
+      exit 0
+    }
+    throw
   }
-  $created = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/pulls" -Headers $headers -Method Post -Body (@{
-    title = $prTitle; head = $branch; base = $baseBranch; body = $prBody
-  } | ConvertTo-Json -Depth 4) -ContentType "application/json; charset=utf-8"
-  Write-Host "Pull request created: #$($created.number) $($created.html_url)"
-  exit 0
 }
 
 if (-not $ghAvailable) {

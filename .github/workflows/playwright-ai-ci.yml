@@ -67,6 +67,7 @@ jobs:
         if: always()
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN || github.token }}
+          AI_FIX_PR_BASE: ${{ github.head_ref || github.ref_name }}
         run: pwsh -File scripts/create-ai-fix-pr.ps1
 
       - name: Upload reports
