@@ -1,14 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
 import { listCaseLabels, loadCase } from "./cases";
+import { loadGroundTruth } from "./score-triage";
 import { paths } from "../paths";
-import type { SuiteReport } from "./suite-report";
+import type { SuiteCaseResult, SuiteReport } from "./suite-report";
 
 const HISTORY_DIR = path.join(paths.reportsDir, "ai-test-history");
 const HISTORY_CSV = path.join(HISTORY_DIR, "model_eval_history.csv");
 const RUNS_CSV = path.join(HISTORY_DIR, "model_eval_runs.csv");
+const SCORES_CSV = path.join(HISTORY_DIR, "model_eval_scores.csv");
 
-const FIXED_COLUMNS = ["case", "has_ground_truth", "failure_count"] as const;
+const FIXED_COLUMNS = ["case", "eval_step", "has_ground_truth", "failure_count"] as const;
 
 const RUNS_COLUMNS = [
   "run_column",
@@ -21,7 +23,27 @@ const RUNS_COLUMNS = [
   "errors",
   "skipped",
   "total_cases",
+  "scored_cases",
   "avg_triage_score",
+  "avg_root_cause_accuracy",
+  "avg_duplicate_grouping_f1",
+  "avg_category_accuracy",
+  "avg_detail_field_accuracy",
+] as const;
+
+const SCORES_COLUMNS = [
+  "run_column",
+  "model",
+  "started_at_utc",
+  "case",
+  "status",
+  "duration_seconds",
+  "has_ground_truth",
+  "triage_score",
+  "root_cause_accuracy",
+  "duplicate_grouping_f1",
+  "category_accuracy",
+  "detail_field_accuracy",
 ] as const;
 
 function sanitizeForPath(value: string): string {
@@ -52,6 +74,18 @@ export function formatCell(status: string, durationSeconds: number | undefined):
   return `${status} (${durationSeconds.toFixed(1)}s)`;
 }
 
+/** Wide-matrix cell: status, optional triage %, duration. */
+export function formatHistoryCell(
+  status: string,
+  durationSeconds: number,
+  triageScore?: number,
+): string {
+  if (triageScore !== undefined) {
+    return `${status} ${(triageScore * 100).toFixed(1)}% (${durationSeconds.toFixed(1)}s)`;
+  }
+  return formatCell(status, durationSeconds);
+}
+
 function escapeCsvCell(value: string | number | boolean | undefined): string {
   if (value === undefined || value === null) return "";
   const text = String(value);
@@ -63,6 +97,25 @@ function escapeCsvCell(value: string | number | boolean | undefined): string {
 
 function csvRow(cells: (string | number | boolean | undefined)[]): string {
   return cells.map(escapeCsvCell).join(",");
+}
+
+function formatScore(value: number | undefined): string {
+  return value === undefined ? "" : value.toFixed(4);
+}
+
+function averageMetric(
+  cases: SuiteCaseResult[],
+  pick: (c: SuiteCaseResult) => number | undefined,
+): number | undefined {
+  const values = cases.map(pick).filter((v): v is number => v !== undefined);
+  if (values.length === 0) return undefined;
+  return values.reduce((sum, v) => sum + v, 0) / values.length;
+}
+
+function getEvalStep(caseDir: string): string {
+  const groundTruth = loadGroundTruth(caseDir);
+  if (!groundTruth?.evalSteps?.length) return "triage";
+  return groundTruth.evalSteps.join("+");
 }
 
 function parseCsv(content: string): string[][] {
@@ -118,6 +171,7 @@ function loadCaseTemplates(): Map<string, Record<string, string>> {
     const testCase = loadCase(label);
     templates.set(label, {
       case: label,
+      eval_step: getEvalStep(testCase.dir),
       has_ground_truth: testCase.hasGroundTruth ? "true" : "false",
       failure_count: String(testCase.failures.length),
     });
@@ -161,6 +215,19 @@ function writeHistoryMatrix(fieldnames: string[], rows: Map<string, Record<strin
   fs.writeFileSync(HISTORY_CSV, `${lines.join("\n")}\n`, "utf8");
 }
 
+function appendCsvRows(
+  filePath: string,
+  columns: readonly string[],
+  rows: (string | number | boolean | undefined)[][],
+): void {
+  const needsHeader = !fs.existsSync(filePath);
+  const payload =
+    (needsHeader ? `${columns.join(",")}\n` : "") +
+    rows.map((row) => csvRow(row)).join("\n") +
+    "\n";
+  fs.appendFileSync(filePath, payload, "utf8");
+}
+
 function appendRunMetadata(
   runColumn: string,
   report: SuiteReport,
@@ -169,24 +236,53 @@ function appendRunMetadata(
 ): void {
   const totalDurationSeconds =
     report.cases.reduce((sum, c) => sum + (c.durationMs ?? 0), 0) / 1000;
+  const scoredCases = report.cases.filter((c) => c.metrics?.triageScore !== undefined);
 
-  const needsHeader = !fs.existsSync(RUNS_CSV);
-  const row = csvRow([
-    runColumn,
-    report.model ?? "",
-    startedAt.toISOString(),
-    finishedAt.toISOString(),
-    totalDurationSeconds.toFixed(3),
-    report.passed,
-    report.failed,
-    report.errors,
-    report.skipped,
-    report.caseCount,
-    report.averageTriageScore !== undefined ? report.averageTriageScore.toFixed(4) : "",
+  appendCsvRows(RUNS_CSV, RUNS_COLUMNS, [
+    [
+      runColumn,
+      report.model ?? "",
+      startedAt.toISOString(),
+      finishedAt.toISOString(),
+      totalDurationSeconds.toFixed(3),
+      report.passed,
+      report.failed,
+      report.errors,
+      report.skipped,
+      report.caseCount,
+      scoredCases.length,
+      formatScore(report.averageTriageScore),
+      formatScore(averageMetric(scoredCases, (c) => c.metrics?.rootCauseAccuracy)),
+      formatScore(averageMetric(scoredCases, (c) => c.metrics?.duplicateGroupingF1)),
+      formatScore(averageMetric(scoredCases, (c) => c.metrics?.categoryAccuracy)),
+      formatScore(averageMetric(scoredCases, (c) => c.metrics?.detailFieldAccuracy)),
+    ],
   ]);
+}
 
-  const payload = (needsHeader ? `${RUNS_COLUMNS.join(",")}\n` : "") + `${row}\n`;
-  fs.appendFileSync(RUNS_CSV, payload, "utf8");
+function appendScoreRows(
+  runColumn: string,
+  report: SuiteReport,
+  startedAt: Date,
+): void {
+  appendCsvRows(
+    SCORES_CSV,
+    SCORES_COLUMNS,
+    report.cases.map((c) => [
+      runColumn,
+      report.model ?? "",
+      startedAt.toISOString(),
+      c.label,
+      c.status,
+      ((c.durationMs ?? 0) / 1000).toFixed(3),
+      c.hasGroundTruth,
+      formatScore(c.metrics?.triageScore),
+      formatScore(c.metrics?.rootCauseAccuracy),
+      formatScore(c.metrics?.duplicateGroupingF1),
+      formatScore(c.metrics?.categoryAccuracy),
+      formatScore(c.metrics?.detailFieldAccuracy),
+    ]),
+  );
 }
 
 export interface SuiteHistoryResult {
@@ -194,10 +290,13 @@ export interface SuiteHistoryResult {
   runDir: string;
   historyCsv: string;
   runsCsv: string;
+  scoresCsv: string;
   runColumn: string;
 }
 
 export function appendSuiteHistory(report: SuiteReport): SuiteHistoryResult {
+  fs.mkdirSync(HISTORY_DIR, { recursive: true });
+
   const model = report.model ?? "unknown";
   const startedAt = new Date(report.startedAt ?? report.generatedAt);
   const finishedAt = new Date(report.generatedAt);
@@ -232,14 +331,20 @@ export function appendSuiteHistory(report: SuiteReport): SuiteHistoryResult {
 
   for (const c of report.cases) {
     const key = c.label;
+    const template = templates.get(key);
     if (!rows.has(key)) {
       rows.set(key, {
         case: key,
+        eval_step: template?.eval_step ?? "triage",
         has_ground_truth: c.hasGroundTruth ? "true" : "false",
         failure_count: String(c.failureCount),
       });
     }
-    rows.get(key)![runColumn] = formatCell(c.status, (c.durationMs ?? 0) / 1000);
+    rows.get(key)![runColumn] = formatHistoryCell(
+      c.status,
+      (c.durationMs ?? 0) / 1000,
+      c.metrics?.triageScore,
+    );
   }
 
   if (!fieldnames.includes(runColumn)) {
@@ -248,12 +353,14 @@ export function appendSuiteHistory(report: SuiteReport): SuiteHistoryResult {
 
   writeHistoryMatrix(fieldnames, rows);
   appendRunMetadata(runColumn, report, startedAt, finishedAt);
+  appendScoreRows(runColumn, report, startedAt);
 
   return {
     runId,
     runDir,
     historyCsv: HISTORY_CSV,
     runsCsv: RUNS_CSV,
+    scoresCsv: SCORES_CSV,
     runColumn,
   };
 }

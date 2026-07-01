@@ -198,6 +198,7 @@ async function main(): Promise<void> {
   console.log(`Updated history: reports/ai-test-history/model_eval_history.csv`);
   console.log(`Run column: ${history.runColumn}`);
   console.log(`Appended run log: reports/ai-test-history/model_eval_runs.csv`);
+  console.log(`Appended scores: reports/ai-test-history/model_eval_scores.csv`);
   console.log(`Run snapshot: reports/ai-test-history/${history.runId}/`);
 
   if (flags.open === "true") {
