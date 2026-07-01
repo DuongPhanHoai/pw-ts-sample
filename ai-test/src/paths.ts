@@ -11,4 +11,7 @@ export const paths = {
   resultsJson: path.join(projectRoot, "reports", "results.json"),
   testResultsDir: path.join(projectRoot, "test-results"),
   reportsDir: path.join(projectRoot, "reports"),
+  suiteReportJson: path.join(projectRoot, "reports", "ai-test-suite.json"),
+  suiteReportMd: path.join(projectRoot, "reports", "ai-test-suite.md"),
+  suiteCaseDir: path.join(projectRoot, "reports", "ai-test-suite"),
 };

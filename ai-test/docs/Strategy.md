@@ -2,34 +2,35 @@
 
 **`ai-test/` is not the Playwright pipeline.** Cases here do not run in CI, self-hosted workflows, or `npm run pipeline:local`. That automation lives under `docs/` and `.github/workflows/`.
 
-This area is for **offline evaluation** of LLM analyze/fix behavior using **saved Playwright output**—not live browser runs.
+This area is for **offline LLM evaluation** using **saved Playwright output** in `ai-test/inputs/` — not live browser runs.
 
 ---
 
 ## Workflow
 
-1. **Capture once (manual)**  
-   Run Playwright when you need real failure output. Copy artifacts into **`ai-test/inputs/<case-label>/`** (folder name = stable label).
+1. **Fixtures on disk**  
+   Each case is a folder **`ai-test/inputs/<case-label>/`** with `results.json`, attachments, and optional `groundtruth.json`. Build these manually from a Playwright run (copy from `reports/` and `test-results/`).
 
-2. **Run one case at a time**  
-   Each folder is one eval case. Load that folder’s `results.json` and attachments; call triage / fix-plan (or thin eval scripts) **for that case only**. No Playwright re-run, no full analyze → apply → PR chain.
+2. **Run suite (LLM)**  
+   `npm run ai-test:suite` calls the **triage LLM** on each case. No Playwright, no scan/capture tooling, no full analyze → apply → PR chain.
 
-3. **Wire the repo AI pipeline later**  
-   When ready, point `analyze_results` (and apply) at `ai-test/inputs/<case-label>/` via a `--case` replay flag. Until then: build the corpus, ground truth, and per-case runs.
+3. **Wire analyze replay later (optional)**  
+   Point `analyze_results` at `ai-test/inputs/<case-label>/` via a future `--case` flag for fix-plan and apply.
 
 ---
 
 ## Principles
 
-- **Fixture-first** — LLM inputs are files on disk (`results.json`, `error-context.md`, page HTML/CSS), not a fresh test execution.
-- **Isolated from CI** — Compare models and prompts on your machine; do not tie eval to GitHub Actions or runner setup.
-- **Safety mindset** (for when apply is hooked up) — Policy traps in `inputs/` should prove the model refuses bad auto-heals; the canonical scorecard and promotion rules live in [LLM-EVAL-STRATEGY.md](LLM-EVAL-STRATEGY.md).
+- **Fixture-first** — LLM reads files on disk, not a fresh test run.
+- **Suite-only entry point** — one command: `npm run ai-test:suite`.
+- **Isolated from CI** — local LM Studio; not tied to GitHub Actions.
+- **Safety** — trap cases + scorecard in [LLM-EVAL-STRATEGY.md](LLM-EVAL-STRATEGY.md).
 
-Playwright pipeline design (analyze, apply, PR): **[docs/AI-POST-AUTO-HEAL.md](../../docs/AI-POST-AUTO-HEAL.md)**.
+Playwright pipeline: **[docs/AI-POST-AUTO-HEAL.md](../../docs/AI-POST-AUTO-HEAL.md)**.
 
 Doc roles:
 
-- [Strategy.md](Strategy.md) — workflow: capture once, run one case, wire replay later.
-- [LLM-EVAL-STRATEGY.md](LLM-EVAL-STRATEGY.md) — why measure, scorecard, promotion rules, rollout, CEO view.
-- [TESTING-SCENARIOS.md](TESTING-SCENARIOS.md) — concrete fixture scenarios to create first.
-- [ideas.md](ideas.md) — implementation notes for eval scripts, logging, tools, and observability.
+- [Strategy.md](Strategy.md) — this file.
+- [LLM-EVAL-STRATEGY.md](LLM-EVAL-STRATEGY.md) — scorecard, promotion rules, CEO view.
+- [TESTING-SCENARIOS.md](TESTING-SCENARIOS.md) — which folders to create under `inputs/`.
+- [ideas.md](ideas.md) — future eval harness, logging, tools.

@@ -1,19 +1,21 @@
 # AI test
 
-**Offline evaluation** of LLM triage/fix quality using **saved Playwright output**—not live runs, not CI, not `pipeline:local`.
+**Offline LLM evaluation** using saved Playwright fixtures in `ai-test/inputs/<case-label>/`.
 
 | Path | Purpose |
 |------|---------|
-| **[src/](src/)** | AI test source (scan/capture, future eval harness) |
-| **[docs/Strategy.md](docs/Strategy.md)** | Capture → one case at a time → wire analyze later |
-| **[docs/LLM-EVAL-STRATEGY.md](docs/LLM-EVAL-STRATEGY.md)** | Leadership value, canonical scorecard, promotion rules, rollout |
-| **[docs/TESTING-SCENARIOS.md](docs/TESTING-SCENARIOS.md)** | Concrete fixture scenarios to create first |
-| **[docs/ideas.md](docs/ideas.md)** | Eval harness shape, logging, optional tools, observability |
-| **[inputs/](inputs/)** | One folder per case (`<case-label>/results.json`, attachments, ground truth) |
+| **[src/run-suite.ts](src/run-suite.ts)** | Triage LLM on every case |
+| **[docs/Strategy.md](docs/Strategy.md)** | Workflow and principles |
+| **[docs/LLM-EVAL-STRATEGY.md](docs/LLM-EVAL-STRATEGY.md)** | Scorecard and rollout |
+| **[docs/TESTING-SCENARIOS.md](docs/TESTING-SCENARIOS.md)** | Scenario folders to build |
+| **[inputs/](inputs/)** | Fixture data per case |
+
+## Run (LM Studio + `.env` required)
 
 ```bash
-npm run ai-test:scan
-npm run ai-test:capture -- --label <case-label> --group 0 --scope single
+npm run ai-test:suite
+npm run ai-test:suite -- --case <case-label> --open
+start reports\ai-test-suite.md
 ```
 
 Playwright + CI pipeline: **[docs/](../docs/README.md)**.
