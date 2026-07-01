@@ -184,12 +184,14 @@ async function main(): Promise<void> {
     cases: results,
   };
 
-  const { markdown } = writeSuiteReport(report);
+  const { markdown, history } = writeSuiteReport(report);
 
   console.log("");
   console.log(renderSuiteMarkdown(report).split("\n").slice(0, 16).join("\n"));
   console.log(`\nWrote reports/ai-test-suite.json`);
   console.log(`Wrote reports/ai-test-suite.md`);
+  console.log(`Appended history: reports/ai-test-history/summary.csv`);
+  console.log(`Run snapshot: reports/ai-test-history/${history.runId}/`);
 
   if (flags.open === "true") {
     openReport(markdown);

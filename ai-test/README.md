@@ -18,4 +18,6 @@ npm run ai-test:suite -- --case <case-label> --open
 start reports\ai-test-suite.md
 ```
 
+Each run appends rows to **`reports/ai-test-history/summary.csv`** keyed by `model` (`LMSTUDIO_MODEL`) and `runAt`. Full snapshots live under `reports/ai-test-history/<timestamp>_<model>/`.
+
 Playwright + CI pipeline: **[docs/](../docs/README.md)**.

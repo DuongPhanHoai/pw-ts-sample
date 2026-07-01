@@ -3,6 +3,7 @@ import path from "node:path";
 import type { FailureTriageResult } from "../../../scripts/lib/failure-triage";
 import { paths } from "../paths";
 import type { TriageMetrics } from "./score-triage";
+import { appendSuiteHistory, type SuiteHistoryResult } from "./suite-history";
 
 export type SuiteCaseStatus = "pass" | "fail" | "skipped" | "error";
 
@@ -100,6 +101,7 @@ export function renderSuiteMarkdown(report: SuiteReport): string {
     "",
     "- JSON: `reports/ai-test-suite.json`",
     "- Per-case triage: `reports/ai-test-suite/<case-label>/triage.json`",
+    "- History CSV: `reports/ai-test-history/summary.csv` (one row per case per run; filter by `model`)",
     "",
     "Open this report:",
     "",
@@ -132,7 +134,11 @@ export function renderSuiteMarkdown(report: SuiteReport): string {
   return lines.join("\n");
 }
 
-export function writeSuiteReport(report: SuiteReport): { json: string; markdown: string } {
+export function writeSuiteReport(report: SuiteReport): {
+  json: string;
+  markdown: string;
+  history: SuiteHistoryResult;
+} {
   const out = suiteReportPaths();
   fs.mkdirSync(out.caseDir, { recursive: true });
   fs.mkdirSync(paths.reportsDir, { recursive: true });
@@ -152,5 +158,6 @@ export function writeSuiteReport(report: SuiteReport): { json: string; markdown:
   fs.writeFileSync(out.json, JSON.stringify(report, null, 2), "utf8");
   const md = renderSuiteMarkdown(report);
   fs.writeFileSync(out.markdown, md, "utf8");
-  return { json: out.json, markdown: out.markdown };
+  const history = appendSuiteHistory(report);
+  return { json: out.json, markdown: out.markdown, history };
 }

@@ -14,4 +14,6 @@ export const paths = {
   suiteReportJson: path.join(projectRoot, "reports", "ai-test-suite.json"),
   suiteReportMd: path.join(projectRoot, "reports", "ai-test-suite.md"),
   suiteCaseDir: path.join(projectRoot, "reports", "ai-test-suite"),
+  suiteHistoryDir: path.join(projectRoot, "reports", "ai-test-history"),
+  suiteHistoryCsv: path.join(projectRoot, "reports", "ai-test-history", "summary.csv"),
 };
