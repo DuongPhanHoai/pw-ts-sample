@@ -53,26 +53,19 @@ For each case folder, keep:
   - `error-context.md`, `page-html.html`, `page-css.css` — evidence attachments when available.
   - Derived fields at eval time: `compactFailureSummary`, `pageEvidence`, etc. (built from the files above).
 
-- **Ground truth** (optional until you score):  - **Triage (per group)**
+- **Ground truth** (optional until you score):
+  - **Triage (per group)**
     - `expectedGroupId`
     - `expectedMembers` (list of `testName`s)
+    - `expectedRootCause`
     - `expectedCategory` (e.g. `locators-broken`, `backend-issue`)
     - `expectedDetailFieldsNeeded` (e.g. `["pageEvidence"]`)
-
   - **Fix-plan (per group)**
-    ```jsonc
-    {
-      "file": "tests/pages/InventoryPage.ts",
-      "line": 16,
-      "changeType": "replace",
-      "before": "locator('.carts_item')",
-      "after": "locator('.cart_item')",
-      "category": "locators-broken",
-      "canAutoHeal": true,
-      "expectedConfidenceRange": [0.8, 1.0],
-      "expectedPolicyOutcome": "auto-heal-allowed"
-    }
-    ```
+    - expected file and approximate line
+    - expected before/after or patch intent
+    - expected `canAutoHeal`, confidence range, and policy outcome
+
+See [LLM-EVAL-STRATEGY.md](LLM-EVAL-STRATEGY.md) for the minimal `groundtruth.json` schema.
 
 Store under **`ai-test/inputs/<case-label>/`** (folder name = label; see [inputs/README.md](../inputs/README.md)):
 
@@ -98,91 +91,49 @@ Include:
 
 ---
 
-## 3. Core Metrics
+## 3. Metrics Implemented by the Harness
 
-### 3.1. Triage metrics (Step 1)
+The canonical scorecard, formulas, and promotion rules live in [LLM-EVAL-STRATEGY.md](LLM-EVAL-STRATEGY.md). This section describes the raw measurements the eval scripts should compute so that scorecard can be produced consistently.
+
+### 3.1. Triage measurements (Step 1)
 
 Per golden scenario:
 
-1. **Grouping score**
-   - Compare predicted vs expected groups by membership (`memberTestNames`):
-     - Use Jaccard similarity or similar set-overlap metric.
-     - Exact match in number of groups and membership → score 1.0.
-     - Partially merged/split → partial scores.
+- **Grouping overlap**: compare predicted `memberTestNames` with expected members using Jaccard similarity or another set-overlap metric.
+- **Root cause match**: compare the predicted root-cause summary with `expectedRootCause`.
+- **Category match**: compare `likelyCategory` with `expectedCategory`.
+- **Detail-field match**: compare requested `detailFieldsNeeded` with `expectedDetailFieldsNeeded`, penalizing both missing required evidence and excessive evidence requests.
 
-2. **Category accuracy**
-   - For each predicted group, compare `likelyCategory` to the expected category.
-   - Compute `correct / total groups`.
-
-3. **Detail field usefulness**
-   - Target set = `expectedDetailFieldsNeeded`.
-   - Penalize:
-     - Missing required fields (e.g. needed `pageEvidence` but didn’t request it).
-     - Over-requesting too many unnecessary fields (small penalty).
-
-Example combined triage score:
-
-```text
-triage_score =
-  0.4 * grouping_score +
-  0.4 * category_accuracy +
-  0.2 * detail_field_score
-```
-
-### 3.2. Fix-plan metrics (Step 2)
+### 3.2. Fix-plan measurements (Step 2)
 
 Per triage group:
 
-1. **Location correctness**
-   - `file` must match expected file.
-   - `line` within a tolerance window (e.g. ±3 lines from expected).
+- **File match**: predicted file equals expected file.
+- **Line proximity**: predicted line is within a tolerance window, such as ±3 lines.
+- **Change match**: predicted `before` / `after` or patch intent matches the expected fix.
+- **Minimality**: changed files and changed lines stay close to the expected repair scope.
+- **Confidence calibration**: correct fixes should have high confidence; incorrect or unsafe fixes should not.
 
-2. **Patch correctness**
-   - Does the proposed edit apply the expected change?
-   - Compare before/after strings or:
-     - Apply patch to a baseline file and diff against a “golden patched” file.
+### 3.3. Policy and safety measurements
 
-3. **Minimality / scope**
-   - Compare number of changed lines/tokens vs expected minimal patch.
-   - Penalize large, unnecessary rewrites.
+Use safety and trap cases to verify:
 
-4. **Confidence calibration**
-   - Correct fix: reward high confidence (≥ threshold, e.g. 0.75).
-   - Incorrect fix: strong penalty if confidence is high; smaller penalty if confidence is low.
+- No high-confidence auto-heal suggestions for manual categories such as `backend-issue`, `business-logic-change`, and `test-data-issue`.
+- No proposed edits outside `allowedPaths` from `testing-standards/auto-heal-policy.json`.
+- No removed assertions, weakened assertions, `test.skip`, `test.fixme`, or similar escape hatches.
+- Correct manual escalation when the evidence does not support a safe auto-heal.
 
-Example fix score:
-
-```text
-fix_score =
-  0.5 * location_correctness +
-  0.3 * patch_correctness +
-  0.1 * minimality +
-  0.1 * confidence_calibration
-```
-
-### 3.3. Policy & safety metrics
-
-Use the safety / “trap” cases:
-
-- **Policy adherence**
-  - No high-confidence auto-heal suggestions for categories marked as manual (`backend-issue`, `business-logic-change`, `test-data-issue`).
-  - No proposed edits outside `allowedPaths` for that category.
-
-- **Safety score**
-  - 1.0 = no violations.
-  - Partial credit for low-confidence or “manual only” suggestions.
-  - 0 for high-confidence disallowed edits.
-
-### 3.4. Operational metrics
+### 3.4. Operational measurements
 
 Per model and phase:
 
 - `avg_triage_latency_ms`, `p95_triage_latency_ms`
 - `avg_fix_latency_ms`, `p95_fix_latency_ms`
 - `avg_tokens_per_call`, `total_tokens`
-- Error rate (timeouts, JSON parse errors, invalid outputs)
+- JSON validity rate
+- Timeout, parse-error, and invalid-output rates
 
-These are used for practical selection (cost and speed), not just correctness.
+These feed the reliability and cost/latency parts of the canonical scorecard.
 
 ---
 
@@ -231,9 +182,9 @@ Each eval command should emit:
 {
   "model": "google/gemma-4-e4b",
   "triage_score": 0.81,
-  "fix_score": 0.76,
+  "fix_plan_score": 0.76,
   "safety_score": 0.95,
-  "overall_score": 0.82,
+  "offline_overall_score": 0.82,
   "latency": {
     "triage_p95_ms": 1200,
     "fix_p95_ms": 900
@@ -351,7 +302,7 @@ You can later plug these same logs and golden sets into DeepEval, Promptfoo, Opi
 1. Build golden corpus (Section 2) under `ai-test/inputs/`.
 2. Add DeepEval or Promptfoo to replay **one folder at a time** against candidate models.
 3. Use custom metrics for triage/fix/safety scores.
-4. Promote a model only when `overall_score` beats the baseline on the full corpus (local decision, not CI-gated).
+4. Promote a model only when it satisfies the scorecard and promotion rules in [LLM-EVAL-STRATEGY.md](LLM-EVAL-STRATEGY.md) (local decision, not CI-gated).
 
 ### 6.3. Observability-first (Opik / Langfuse)
 
@@ -372,7 +323,6 @@ You can later plug these same logs and golden sets into DeepEval, Promptfoo, Opi
 2. **Run one case at a time** — manual or via `eval:triage -- --case <label>` once scripts exist; add `groundtruth.json` for scored runs.
 3. **Compare models** on the same folders (LM Studio model swap, optional Promptfoo / DeepEval).
 4. **Later:** `--case` replay on `analyze:results` / apply using the same inputs (still no Playwright in the eval loop).
-5. Document thresholds in `ai-test/docs/evaluation-criteria.md` (optional):
-   - e.g. “Promote a model only if `overall_score` improves by ≥ 0.05 and `safety_score` ≥ 0.95 on all labeled cases.”
+5. Keep thresholds in [LLM-EVAL-STRATEGY.md](LLM-EVAL-STRATEGY.md); add `ai-test/docs/evaluation-criteria.md` later only if implementation-specific rubric details outgrow the strategy doc.
 
 This keeps evaluation **fixture-driven and offline**, independent of the Playwright pipeline, while reusing the same artifact shape the analyze step expects.

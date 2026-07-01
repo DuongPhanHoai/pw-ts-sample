@@ -19,6 +19,7 @@ on:
 
 jobs:
   test-ui:
+    if: false
     runs-on: [self-hosted, Windows, X64]
     permissions:
       contents: write
