@@ -14,7 +14,9 @@
     "analyze:results": "tsx scripts/analyze_results.ts",
     "apply:ai-fixes": "tsx scripts/apply_ai_fixes.ts",
     "create-ai-fix-pr": "pwsh -File scripts/create-ai-fix-pr.ps1",
-    "pipeline:local": "powershell -ExecutionPolicy Bypass -File ./scripts/run-local-pipeline.ps1"
+    "pipeline:local": "powershell -ExecutionPolicy Bypass -File ./scripts/run-local-pipeline.ps1",
+    "ai-test:scan": "tsx ai-test/src/scan-capture.ts scan",
+    "ai-test:capture": "tsx ai-test/src/scan-capture.ts capture"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",

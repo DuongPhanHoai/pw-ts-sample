@@ -1,0 +1,39 @@
+{
+  "caseLabel": "duplicate-matrix-locator",
+  "capturedAt": "2026-07-01T07:53:23.016Z",
+  "source": {
+    "resultsJson": "reports/results.json",
+    "testResultsDir": "test-results"
+  },
+  "scope": "group",
+  "failureGroup": {
+    "id": "0",
+    "fingerprint": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14|- waiting for locator('#btn-checkout')",
+    "failureLocation": {
+      "file": "tests/pages/CheckoutPage.ts",
+      "line": 14
+    },
+    "callLog": "- waiting for locator('#btn-checkout')",
+    "memberTestNames": [
+      "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Sauce Labs Backpack\" as Test User",
+      "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Sauce Labs Backpack\" as Jane Doe",
+      "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Sauce Labs Backpack\" as Alex Nguyen",
+      "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Sauce Labs Bike Light\" as Test User",
+      "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Sauce Labs Bike Light\" as Jane Doe",
+      "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Sauce Labs Bike Light\" as Alex Nguyen",
+      "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Sauce Labs Bolt T-Shirt\" as Test User",
+      "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Sauce Labs Bolt T-Shirt\" as Jane Doe",
+      "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Sauce Labs Bolt T-Shirt\" as Alex Nguyen",
+      "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Sauce Labs Fleece Jacket\" as Test User",
+      "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Sauce Labs Fleece Jacket\" as Jane Doe",
+      "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Sauce Labs Fleece Jacket\" as Alex Nguyen",
+      "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Sauce Labs Onesie\" as Test User",
+      "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Sauce Labs Onesie\" as Jane Doe",
+      "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Sauce Labs Onesie\" as Alex Nguyen",
+      "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Test.allTheThings() T-Shirt (Red)\" as Test User",
+      "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Test.allTheThings() T-Shirt (Red)\" as Jane Doe",
+      "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Test.allTheThings() T-Shirt (Red)\" as Alex Nguyen"
+    ],
+    "representativeTestName": "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Sauce Labs Backpack\" as Test User"
+  }
+}

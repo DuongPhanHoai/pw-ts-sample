@@ -53,6 +53,10 @@ pw-ts-sample/
 ├── reports/                        # JSON/JUnit + AI outputs (gitignored)
 ├── testing-standards/              # markdown + auto-heal-policy.json
 ├── ai-test/
+│   ├── src/                        # AI test tools (scan/capture, eval harness)
+│   │   ├── scan-capture.ts         # npm run ai-test:scan | ai-test:capture
+│   │   ├── paths.ts
+│   │   └── lib/fixture.ts
 │   ├── docs/                       # evaluation strategy + ideas
 │   │   ├── Strategy.md
 │   │   └── ideas.md

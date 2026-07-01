@@ -1,0 +1,1468 @@
+{
+  "config": {
+    "configFile": "D:\\Testing\\pw-ts-sample\\playwright.config.ts",
+    "rootDir": "D:/Testing/pw-ts-sample/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 4
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/Testing/pw-ts-sample/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/Testing/pw-ts-sample/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 10000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "open": "never",
+          "outputFolder": "playwright-report"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "reports/junit-results.xml"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "reports/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.59.1",
+    "workers": 4,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "cart-and-checkout.spec.ts",
+      "file": "cart-and-checkout.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "cart and checkout (data-driven)",
+          "file": "cart-and-checkout.spec.ts",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "checkout \"Sauce Labs Backpack\" as Test User",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 10112,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                            "column": 21,
+                            "line": 14
+                          },
+                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\CheckoutPage.ts:14\n\n\u001b[0m \u001b[90m 12 |\u001b[39m   \u001b[90m/** Walk the entire checkout, filling the form with the supplied customer. */\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m checkoutFullFlow(customer\u001b[33m:\u001b[39m \u001b[33mCheckoutCustomer\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 14 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mclick(\u001b[32m\"#btn-checkout\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#first-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mfirstName)\u001b[33m;\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#last-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mlastName)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#postal-code\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mpostalCode)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\u001b[22m\n\u001b[2m    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-30T10:31:16.722Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-514e9--Labs-Backpack-as-Test-User-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "page-html",
+                          "contentType": "text/html",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-514e9--Labs-Backpack-as-Test-User-chromium\\attachments\\page-html-573e8445a35462ed942756a003c0b84580cdb6c4.html"
+                        },
+                        {
+                          "name": "page-css",
+                          "contentType": "text/css",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-514e9--Labs-Backpack-as-Test-User-chromium\\attachments\\page-css-05e5099ad052b23f5b15bfc571f8f373fc1fd145.css"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-514e9--Labs-Backpack-as-Test-User-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-514e9--Labs-Backpack-as-Test-User-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8720fd7caf66f8b3d168-04e2cea0e0f7c8087aee",
+              "file": "cart-and-checkout.spec.ts",
+              "line": 10,
+              "column": 11
+            },
+            {
+              "title": "checkout \"Sauce Labs Backpack\" as Jane Doe",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 10109,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                            "column": 21,
+                            "line": 14
+                          },
+                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\CheckoutPage.ts:14\n\n\u001b[0m \u001b[90m 12 |\u001b[39m   \u001b[90m/** Walk the entire checkout, filling the form with the supplied customer. */\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m checkoutFullFlow(customer\u001b[33m:\u001b[39m \u001b[33mCheckoutCustomer\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 14 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mclick(\u001b[32m\"#btn-checkout\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#first-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mfirstName)\u001b[33m;\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#last-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mlastName)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#postal-code\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mpostalCode)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\u001b[22m\n\u001b[2m    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-30T10:31:27.497Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-1f4ed-e-Labs-Backpack-as-Jane-Doe-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "page-html",
+                          "contentType": "text/html",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-1f4ed-e-Labs-Backpack-as-Jane-Doe-chromium\\attachments\\page-html-b729b142bf5b32ab204187538eb7cbc680767e4f.html"
+                        },
+                        {
+                          "name": "page-css",
+                          "contentType": "text/css",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-1f4ed-e-Labs-Backpack-as-Jane-Doe-chromium\\attachments\\page-css-c0d2fea2e27c7531e85af8e77913c73356d8f7e2.css"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-1f4ed-e-Labs-Backpack-as-Jane-Doe-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-1f4ed-e-Labs-Backpack-as-Jane-Doe-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8720fd7caf66f8b3d168-2db20720fa4bb88eae26",
+              "file": "cart-and-checkout.spec.ts",
+              "line": 10,
+              "column": 11
+            },
+            {
+              "title": "checkout \"Sauce Labs Backpack\" as Alex Nguyen",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 10108,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                            "column": 21,
+                            "line": 14
+                          },
+                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\CheckoutPage.ts:14\n\n\u001b[0m \u001b[90m 12 |\u001b[39m   \u001b[90m/** Walk the entire checkout, filling the form with the supplied customer. */\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m checkoutFullFlow(customer\u001b[33m:\u001b[39m \u001b[33mCheckoutCustomer\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 14 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mclick(\u001b[32m\"#btn-checkout\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#first-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mfirstName)\u001b[33m;\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#last-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mlastName)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#postal-code\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mpostalCode)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\u001b[22m\n\u001b[2m    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-30T10:31:38.274Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-30d46-abs-Backpack-as-Alex-Nguyen-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "page-html",
+                          "contentType": "text/html",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-30d46-abs-Backpack-as-Alex-Nguyen-chromium\\attachments\\page-html-3f314f18fc1524b8e343c4c69d6a14c45a85bfd9.html"
+                        },
+                        {
+                          "name": "page-css",
+                          "contentType": "text/css",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-30d46-abs-Backpack-as-Alex-Nguyen-chromium\\attachments\\page-css-dea89bca9b78fc66355f68836662146553b37176.css"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-30d46-abs-Backpack-as-Alex-Nguyen-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-30d46-abs-Backpack-as-Alex-Nguyen-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8720fd7caf66f8b3d168-46986ed2d57bf68bb312",
+              "file": "cart-and-checkout.spec.ts",
+              "line": 10,
+              "column": 11
+            },
+            {
+              "title": "checkout \"Sauce Labs Bike Light\" as Test User",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 10116,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                            "column": 21,
+                            "line": 14
+                          },
+                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\CheckoutPage.ts:14\n\n\u001b[0m \u001b[90m 12 |\u001b[39m   \u001b[90m/** Walk the entire checkout, filling the form with the supplied customer. */\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m checkoutFullFlow(customer\u001b[33m:\u001b[39m \u001b[33mCheckoutCustomer\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 14 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mclick(\u001b[32m\"#btn-checkout\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#first-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mfirstName)\u001b[33m;\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#last-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mlastName)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#postal-code\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mpostalCode)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\u001b[22m\n\u001b[2m    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-30T10:31:48.993Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-187ea-abs-Bike-Light-as-Test-User-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "page-html",
+                          "contentType": "text/html",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-187ea-abs-Bike-Light-as-Test-User-chromium\\attachments\\page-html-4b39bce89a7cc8628cb7445bd380ed3c95389544.html"
+                        },
+                        {
+                          "name": "page-css",
+                          "contentType": "text/css",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-187ea-abs-Bike-Light-as-Test-User-chromium\\attachments\\page-css-6d51c2fd2bcd5595f645f24924fef29872092ba0.css"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-187ea-abs-Bike-Light-as-Test-User-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-187ea-abs-Bike-Light-as-Test-User-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8720fd7caf66f8b3d168-96dcea69ab694a152edb",
+              "file": "cart-and-checkout.spec.ts",
+              "line": 10,
+              "column": 11
+            },
+            {
+              "title": "checkout \"Sauce Labs Bike Light\" as Jane Doe",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 10113,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                            "column": 21,
+                            "line": 14
+                          },
+                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\CheckoutPage.ts:14\n\n\u001b[0m \u001b[90m 12 |\u001b[39m   \u001b[90m/** Walk the entire checkout, filling the form with the supplied customer. */\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m checkoutFullFlow(customer\u001b[33m:\u001b[39m \u001b[33mCheckoutCustomer\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 14 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mclick(\u001b[32m\"#btn-checkout\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#first-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mfirstName)\u001b[33m;\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#last-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mlastName)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#postal-code\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mpostalCode)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\u001b[22m\n\u001b[2m    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-30T10:31:59.694Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-561b8-Labs-Bike-Light-as-Jane-Doe-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "page-html",
+                          "contentType": "text/html",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-561b8-Labs-Bike-Light-as-Jane-Doe-chromium\\attachments\\page-html-9d8830c081487df2a29c2c1b1ceecbd027f53c22.html"
+                        },
+                        {
+                          "name": "page-css",
+                          "contentType": "text/css",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-561b8-Labs-Bike-Light-as-Jane-Doe-chromium\\attachments\\page-css-67da8f57bf2dc61226916ce5de8d96685e49ad7d.css"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-561b8-Labs-Bike-Light-as-Jane-Doe-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-561b8-Labs-Bike-Light-as-Jane-Doe-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8720fd7caf66f8b3d168-3fa97a794db22fdb4b39",
+              "file": "cart-and-checkout.spec.ts",
+              "line": 10,
+              "column": 11
+            },
+            {
+              "title": "checkout \"Sauce Labs Bike Light\" as Alex Nguyen",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 10107,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                            "column": 21,
+                            "line": 14
+                          },
+                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\CheckoutPage.ts:14\n\n\u001b[0m \u001b[90m 12 |\u001b[39m   \u001b[90m/** Walk the entire checkout, filling the form with the supplied customer. */\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m checkoutFullFlow(customer\u001b[33m:\u001b[39m \u001b[33mCheckoutCustomer\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 14 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mclick(\u001b[32m\"#btn-checkout\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#first-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mfirstName)\u001b[33m;\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#last-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mlastName)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#postal-code\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mpostalCode)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\u001b[22m\n\u001b[2m    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-30T10:32:10.394Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-926ae-s-Bike-Light-as-Alex-Nguyen-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "page-html",
+                          "contentType": "text/html",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-926ae-s-Bike-Light-as-Alex-Nguyen-chromium\\attachments\\page-html-f55ffce45faded3f53d32cc0b40db9f3dead7942.html"
+                        },
+                        {
+                          "name": "page-css",
+                          "contentType": "text/css",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-926ae-s-Bike-Light-as-Alex-Nguyen-chromium\\attachments\\page-css-b1e8088beab4f4a9f7735818c0af1f5c11ea9489.css"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-926ae-s-Bike-Light-as-Alex-Nguyen-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-926ae-s-Bike-Light-as-Alex-Nguyen-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8720fd7caf66f8b3d168-a68341727e584bef139c",
+              "file": "cart-and-checkout.spec.ts",
+              "line": 10,
+              "column": 11
+            },
+            {
+              "title": "checkout \"Sauce Labs Bolt T-Shirt\" as Test User",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 10115,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                            "column": 21,
+                            "line": 14
+                          },
+                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\CheckoutPage.ts:14\n\n\u001b[0m \u001b[90m 12 |\u001b[39m   \u001b[90m/** Walk the entire checkout, filling the form with the supplied customer. */\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m checkoutFullFlow(customer\u001b[33m:\u001b[39m \u001b[33mCheckoutCustomer\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 14 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mclick(\u001b[32m\"#btn-checkout\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#first-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mfirstName)\u001b[33m;\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#last-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mlastName)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#postal-code\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mpostalCode)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\u001b[22m\n\u001b[2m    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-30T10:32:21.120Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-df8a5-s-Bolt-T-Shirt-as-Test-User-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "page-html",
+                          "contentType": "text/html",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-df8a5-s-Bolt-T-Shirt-as-Test-User-chromium\\attachments\\page-html-e91416ffe643685ee3b02c847b6a2d3e81d49e8a.html"
+                        },
+                        {
+                          "name": "page-css",
+                          "contentType": "text/css",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-df8a5-s-Bolt-T-Shirt-as-Test-User-chromium\\attachments\\page-css-4102b1602ef6df408c3e446352043d7b446ee4d7.css"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-df8a5-s-Bolt-T-Shirt-as-Test-User-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-df8a5-s-Bolt-T-Shirt-as-Test-User-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8720fd7caf66f8b3d168-d46889a0acfc13f891c7",
+              "file": "cart-and-checkout.spec.ts",
+              "line": 10,
+              "column": 11
+            },
+            {
+              "title": "checkout \"Sauce Labs Bolt T-Shirt\" as Jane Doe",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 10123,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                            "column": 21,
+                            "line": 14
+                          },
+                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\CheckoutPage.ts:14\n\n\u001b[0m \u001b[90m 12 |\u001b[39m   \u001b[90m/** Walk the entire checkout, filling the form with the supplied customer. */\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m checkoutFullFlow(customer\u001b[33m:\u001b[39m \u001b[33mCheckoutCustomer\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 14 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mclick(\u001b[32m\"#btn-checkout\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#first-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mfirstName)\u001b[33m;\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#last-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mlastName)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#postal-code\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mpostalCode)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\u001b[22m\n\u001b[2m    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-30T10:32:31.845Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-87e64-bs-Bolt-T-Shirt-as-Jane-Doe-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "page-html",
+                          "contentType": "text/html",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-87e64-bs-Bolt-T-Shirt-as-Jane-Doe-chromium\\attachments\\page-html-335ab3e0e22b595801932f8e5b0183c6d903f21d.html"
+                        },
+                        {
+                          "name": "page-css",
+                          "contentType": "text/css",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-87e64-bs-Bolt-T-Shirt-as-Jane-Doe-chromium\\attachments\\page-css-563fb31b3d0e981caa3293ff713c9e53e4428bc0.css"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-87e64-bs-Bolt-T-Shirt-as-Jane-Doe-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-87e64-bs-Bolt-T-Shirt-as-Jane-Doe-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8720fd7caf66f8b3d168-fc650a335c740068dd30",
+              "file": "cart-and-checkout.spec.ts",
+              "line": 10,
+              "column": 11
+            },
+            {
+              "title": "checkout \"Sauce Labs Bolt T-Shirt\" as Alex Nguyen",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 12,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 10118,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                            "column": 21,
+                            "line": 14
+                          },
+                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\CheckoutPage.ts:14\n\n\u001b[0m \u001b[90m 12 |\u001b[39m   \u001b[90m/** Walk the entire checkout, filling the form with the supplied customer. */\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m checkoutFullFlow(customer\u001b[33m:\u001b[39m \u001b[33mCheckoutCustomer\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 14 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mclick(\u001b[32m\"#btn-checkout\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#first-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mfirstName)\u001b[33m;\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#last-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mlastName)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#postal-code\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mpostalCode)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\u001b[22m\n\u001b[2m    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-30T10:32:42.549Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-06c98-Bolt-T-Shirt-as-Alex-Nguyen-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "page-html",
+                          "contentType": "text/html",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-06c98-Bolt-T-Shirt-as-Alex-Nguyen-chromium\\attachments\\page-html-56e267d0c27f96cafef80ab829fe752e9f8d9549.html"
+                        },
+                        {
+                          "name": "page-css",
+                          "contentType": "text/css",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-06c98-Bolt-T-Shirt-as-Alex-Nguyen-chromium\\attachments\\page-css-b3917a7fc805a85961967c22bf6565a08f6007ff.css"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-06c98-Bolt-T-Shirt-as-Alex-Nguyen-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-06c98-Bolt-T-Shirt-as-Alex-Nguyen-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8720fd7caf66f8b3d168-9c47f1499a096bb31bea",
+              "file": "cart-and-checkout.spec.ts",
+              "line": 10,
+              "column": 11
+            },
+            {
+              "title": "checkout \"Sauce Labs Fleece Jacket\" as Test User",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 13,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 10108,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                            "column": 21,
+                            "line": 14
+                          },
+                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\CheckoutPage.ts:14\n\n\u001b[0m \u001b[90m 12 |\u001b[39m   \u001b[90m/** Walk the entire checkout, filling the form with the supplied customer. */\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m checkoutFullFlow(customer\u001b[33m:\u001b[39m \u001b[33mCheckoutCustomer\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 14 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mclick(\u001b[32m\"#btn-checkout\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#first-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mfirstName)\u001b[33m;\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#last-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mlastName)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#postal-code\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mpostalCode)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\u001b[22m\n\u001b[2m    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-30T10:32:53.255Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-e63bf--Fleece-Jacket-as-Test-User-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "page-html",
+                          "contentType": "text/html",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-e63bf--Fleece-Jacket-as-Test-User-chromium\\attachments\\page-html-06d17aadc4879d274b6200efc1e02166b52b0259.html"
+                        },
+                        {
+                          "name": "page-css",
+                          "contentType": "text/css",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-e63bf--Fleece-Jacket-as-Test-User-chromium\\attachments\\page-css-20d57e3cf2b3eec33ae10f8e257fc4cc7d3b0ca4.css"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-e63bf--Fleece-Jacket-as-Test-User-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-e63bf--Fleece-Jacket-as-Test-User-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8720fd7caf66f8b3d168-1ec7fc88555d6db9dc0a",
+              "file": "cart-and-checkout.spec.ts",
+              "line": 10,
+              "column": 11
+            },
+            {
+              "title": "checkout \"Sauce Labs Fleece Jacket\" as Jane Doe",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 10173,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                            "column": 21,
+                            "line": 14
+                          },
+                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\CheckoutPage.ts:14\n\n\u001b[0m \u001b[90m 12 |\u001b[39m   \u001b[90m/** Walk the entire checkout, filling the form with the supplied customer. */\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m checkoutFullFlow(customer\u001b[33m:\u001b[39m \u001b[33mCheckoutCustomer\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 14 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mclick(\u001b[32m\"#btn-checkout\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#first-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mfirstName)\u001b[33m;\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#last-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mlastName)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#postal-code\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mpostalCode)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\u001b[22m\n\u001b[2m    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-30T10:33:03.968Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-9c162-s-Fleece-Jacket-as-Jane-Doe-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "page-html",
+                          "contentType": "text/html",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-9c162-s-Fleece-Jacket-as-Jane-Doe-chromium\\attachments\\page-html-cfcf7c0a78e46b5c2a9ff6f43bc812f3277ac68f.html"
+                        },
+                        {
+                          "name": "page-css",
+                          "contentType": "text/css",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-9c162-s-Fleece-Jacket-as-Jane-Doe-chromium\\attachments\\page-css-1f292cb1288888429288960c42f4cdf457676ff5.css"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-9c162-s-Fleece-Jacket-as-Jane-Doe-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-9c162-s-Fleece-Jacket-as-Jane-Doe-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8720fd7caf66f8b3d168-3c24c2afb5a47de2518e",
+              "file": "cart-and-checkout.spec.ts",
+              "line": 10,
+              "column": 11
+            },
+            {
+              "title": "checkout \"Sauce Labs Fleece Jacket\" as Alex Nguyen",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 15,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 10111,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                            "column": 21,
+                            "line": 14
+                          },
+                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\CheckoutPage.ts:14\n\n\u001b[0m \u001b[90m 12 |\u001b[39m   \u001b[90m/** Walk the entire checkout, filling the form with the supplied customer. */\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m checkoutFullFlow(customer\u001b[33m:\u001b[39m \u001b[33mCheckoutCustomer\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 14 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mclick(\u001b[32m\"#btn-checkout\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#first-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mfirstName)\u001b[33m;\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#last-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mlastName)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#postal-code\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mpostalCode)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\u001b[22m\n\u001b[2m    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-30T10:33:14.894Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-6fde9-leece-Jacket-as-Alex-Nguyen-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "page-html",
+                          "contentType": "text/html",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-6fde9-leece-Jacket-as-Alex-Nguyen-chromium\\attachments\\page-html-aa0b2bccfd05bc1eec7b0ee593f71f20789c8c13.html"
+                        },
+                        {
+                          "name": "page-css",
+                          "contentType": "text/css",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-6fde9-leece-Jacket-as-Alex-Nguyen-chromium\\attachments\\page-css-7201151da12e2d1b63e2d482b6638eb68a88cf0b.css"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-6fde9-leece-Jacket-as-Alex-Nguyen-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-6fde9-leece-Jacket-as-Alex-Nguyen-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8720fd7caf66f8b3d168-b49f40556c21f3ee690e",
+              "file": "cart-and-checkout.spec.ts",
+              "line": 10,
+              "column": 11
+            },
+            {
+              "title": "checkout \"Sauce Labs Onesie\" as Test User",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 16,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 10115,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                            "column": 21,
+                            "line": 14
+                          },
+                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\CheckoutPage.ts:14\n\n\u001b[0m \u001b[90m 12 |\u001b[39m   \u001b[90m/** Walk the entire checkout, filling the form with the supplied customer. */\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m checkoutFullFlow(customer\u001b[33m:\u001b[39m \u001b[33mCheckoutCustomer\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 14 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mclick(\u001b[32m\"#btn-checkout\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#first-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mfirstName)\u001b[33m;\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#last-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mlastName)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#postal-code\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mpostalCode)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\u001b[22m\n\u001b[2m    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-30T10:33:25.597Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-bc73e-ce-Labs-Onesie-as-Test-User-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "page-html",
+                          "contentType": "text/html",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-bc73e-ce-Labs-Onesie-as-Test-User-chromium\\attachments\\page-html-a3ded62b7b8773778e48c69638122f6aec9bda9d.html"
+                        },
+                        {
+                          "name": "page-css",
+                          "contentType": "text/css",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-bc73e-ce-Labs-Onesie-as-Test-User-chromium\\attachments\\page-css-7c07160634e53fbfc65fb5bf0158e6560604ed16.css"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-bc73e-ce-Labs-Onesie-as-Test-User-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-bc73e-ce-Labs-Onesie-as-Test-User-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8720fd7caf66f8b3d168-ae25756489df9be40c23",
+              "file": "cart-and-checkout.spec.ts",
+              "line": 10,
+              "column": 11
+            },
+            {
+              "title": "checkout \"Sauce Labs Onesie\" as Jane Doe",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 17,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 10112,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                            "column": 21,
+                            "line": 14
+                          },
+                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\CheckoutPage.ts:14\n\n\u001b[0m \u001b[90m 12 |\u001b[39m   \u001b[90m/** Walk the entire checkout, filling the form with the supplied customer. */\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m checkoutFullFlow(customer\u001b[33m:\u001b[39m \u001b[33mCheckoutCustomer\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 14 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mclick(\u001b[32m\"#btn-checkout\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#first-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mfirstName)\u001b[33m;\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#last-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mlastName)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#postal-code\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mpostalCode)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\u001b[22m\n\u001b[2m    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-30T10:33:36.305Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-d0a17-uce-Labs-Onesie-as-Jane-Doe-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "page-html",
+                          "contentType": "text/html",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-d0a17-uce-Labs-Onesie-as-Jane-Doe-chromium\\attachments\\page-html-9cd0266921e9be81a7ca759decd04c8ae69c7290.html"
+                        },
+                        {
+                          "name": "page-css",
+                          "contentType": "text/css",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-d0a17-uce-Labs-Onesie-as-Jane-Doe-chromium\\attachments\\page-css-91d6723d4be1bf08bb15891d15e5f26fc0d0659b.css"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-d0a17-uce-Labs-Onesie-as-Jane-Doe-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-d0a17-uce-Labs-Onesie-as-Jane-Doe-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8720fd7caf66f8b3d168-361e48b9ce9f3cda7d53",
+              "file": "cart-and-checkout.spec.ts",
+              "line": 10,
+              "column": 11
+            },
+            {
+              "title": "checkout \"Sauce Labs Onesie\" as Alex Nguyen",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 18,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 10108,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                            "column": 21,
+                            "line": 14
+                          },
+                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\CheckoutPage.ts:14\n\n\u001b[0m \u001b[90m 12 |\u001b[39m   \u001b[90m/** Walk the entire checkout, filling the form with the supplied customer. */\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m checkoutFullFlow(customer\u001b[33m:\u001b[39m \u001b[33mCheckoutCustomer\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 14 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mclick(\u001b[32m\"#btn-checkout\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#first-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mfirstName)\u001b[33m;\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#last-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mlastName)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#postal-code\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mpostalCode)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\u001b[22m\n\u001b[2m    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-30T10:33:47.002Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-02be9--Labs-Onesie-as-Alex-Nguyen-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "page-html",
+                          "contentType": "text/html",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-02be9--Labs-Onesie-as-Alex-Nguyen-chromium\\attachments\\page-html-488eab03db291f20033a766d907fbd0800fb0f9c.html"
+                        },
+                        {
+                          "name": "page-css",
+                          "contentType": "text/css",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-02be9--Labs-Onesie-as-Alex-Nguyen-chromium\\attachments\\page-css-bd7292b254f3a2b6327a1a313a2f06aca4b502ca.css"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-02be9--Labs-Onesie-as-Alex-Nguyen-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-02be9--Labs-Onesie-as-Alex-Nguyen-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8720fd7caf66f8b3d168-5249933e2897d58deb4b",
+              "file": "cart-and-checkout.spec.ts",
+              "line": 10,
+              "column": 11
+            },
+            {
+              "title": "checkout \"Test.allTheThings() T-Shirt (Red)\" as Test User",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 19,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 10134,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                            "column": 21,
+                            "line": 14
+                          },
+                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\CheckoutPage.ts:14\n\n\u001b[0m \u001b[90m 12 |\u001b[39m   \u001b[90m/** Walk the entire checkout, filling the form with the supplied customer. */\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m checkoutFullFlow(customer\u001b[33m:\u001b[39m \u001b[33mCheckoutCustomer\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 14 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mclick(\u001b[32m\"#btn-checkout\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#first-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mfirstName)\u001b[33m;\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#last-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mlastName)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#postal-code\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mpostalCode)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\u001b[22m\n\u001b[2m    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-30T10:33:57.690Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-1acc0-gs-T-Shirt-Red-as-Test-User-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "page-html",
+                          "contentType": "text/html",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-1acc0-gs-T-Shirt-Red-as-Test-User-chromium\\attachments\\page-html-3c705f0a9934207601cd51d957c40a1d4970093a.html"
+                        },
+                        {
+                          "name": "page-css",
+                          "contentType": "text/css",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-1acc0-gs-T-Shirt-Red-as-Test-User-chromium\\attachments\\page-css-e32f594edb11f99031b23e833b428a154aa4e898.css"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-1acc0-gs-T-Shirt-Red-as-Test-User-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-1acc0-gs-T-Shirt-Red-as-Test-User-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8720fd7caf66f8b3d168-fa247fd5e7848a547ee9",
+              "file": "cart-and-checkout.spec.ts",
+              "line": 10,
+              "column": 11
+            },
+            {
+              "title": "checkout \"Test.allTheThings() T-Shirt (Red)\" as Jane Doe",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 20,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 10115,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                            "column": 21,
+                            "line": 14
+                          },
+                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\CheckoutPage.ts:14\n\n\u001b[0m \u001b[90m 12 |\u001b[39m   \u001b[90m/** Walk the entire checkout, filling the form with the supplied customer. */\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m checkoutFullFlow(customer\u001b[33m:\u001b[39m \u001b[33mCheckoutCustomer\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 14 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mclick(\u001b[32m\"#btn-checkout\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#first-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mfirstName)\u001b[33m;\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#last-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mlastName)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#postal-code\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mpostalCode)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\u001b[22m\n\u001b[2m    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-30T10:34:08.412Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-e86e8-ngs-T-Shirt-Red-as-Jane-Doe-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "page-html",
+                          "contentType": "text/html",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-e86e8-ngs-T-Shirt-Red-as-Jane-Doe-chromium\\attachments\\page-html-50d29098e3c09db741176626ea7035a146c856a2.html"
+                        },
+                        {
+                          "name": "page-css",
+                          "contentType": "text/css",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-e86e8-ngs-T-Shirt-Red-as-Jane-Doe-chromium\\attachments\\page-css-af1568e094ac2e184996fe0a2685a4c68b4c3c3d.css"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-e86e8-ngs-T-Shirt-Red-as-Jane-Doe-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-e86e8-ngs-T-Shirt-Red-as-Jane-Doe-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8720fd7caf66f8b3d168-9e3ceef1c26ecc583dc2",
+              "file": "cart-and-checkout.spec.ts",
+              "line": 10,
+              "column": 11
+            },
+            {
+              "title": "checkout \"Test.allTheThings() T-Shirt (Red)\" as Alex Nguyen",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 21,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 10120,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                            "column": 21,
+                            "line": 14
+                          },
+                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\CheckoutPage.ts:14\n\n\u001b[0m \u001b[90m 12 |\u001b[39m   \u001b[90m/** Walk the entire checkout, filling the form with the supplied customer. */\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m checkoutFullFlow(customer\u001b[33m:\u001b[39m \u001b[33mCheckoutCustomer\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 14 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mclick(\u001b[32m\"#btn-checkout\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#first-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mfirstName)\u001b[33m;\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#last-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mlastName)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#postal-code\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mpostalCode)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\u001b[22m\n\u001b[2m    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-30T10:34:19.114Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-bce78--T-Shirt-Red-as-Alex-Nguyen-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "page-html",
+                          "contentType": "text/html",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-bce78--T-Shirt-Red-as-Alex-Nguyen-chromium\\attachments\\page-html-db65d59ae5733bfb05cfe0f55ad1666feb35a10e.html"
+                        },
+                        {
+                          "name": "page-css",
+                          "contentType": "text/css",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-bce78--T-Shirt-Red-as-Alex-Nguyen-chromium\\attachments\\page-css-62b23194b7679f2981f050a8aa868ff31eecb846.css"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-bce78--T-Shirt-Red-as-Alex-Nguyen-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-bce78--T-Shirt-Red-as-Alex-Nguyen-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8720fd7caf66f8b3d168-7b35bdba926095e63919",
+              "file": "cart-and-checkout.spec.ts",
+              "line": 10,
+              "column": 11
+            }
+          ],
+          "suites": []
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "expected": 0,
+    "unexpected": 18,
+    "skipped": 0,
+    "flaky": 0
+  }
+}

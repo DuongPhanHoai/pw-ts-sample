@@ -143,15 +143,15 @@ A small TypeScript runner that reads **`ai-test/inputs/<case-label>/`** and scor
 
 ### 4.1. Scripts
 
-Add:
+Add under `ai-test/src/`:
 
-**`scripts/eval_triage.ts`**
+**`ai-test/src/eval_triage.ts`**
 
 - `--case <case-label>` → load `ai-test/inputs/<case-label>/` (`results.json`, attachments, optional `groundtruth.json`).
 - Call triage logic (shared helpers from `analyze_results.ts` / `llm-batch.ts`).
 - Compute grouping, category, and detail-field scores for **that case only**.
 
-**`scripts/eval_fix_plan.ts`**
+**`ai-test/src/eval_fix_plan.ts`**
 
 - Same `--case <case-label>`; optional fix-only mode with golden triage injected.
 - Computes location, patch, minimality, confidence, policy scores for **that case**.
@@ -162,8 +162,8 @@ Add npm scripts:
 
 ```jsonc
 "scripts": {
-  "eval:triage": "ts-node scripts/eval_triage.ts",
-  "eval:fix-plan": "ts-node scripts/eval_fix_plan.ts"
+  "eval:triage": "tsx ai-test/src/eval_triage.ts",
+  "eval:fix-plan": "tsx ai-test/src/eval_fix_plan.ts"
 }
 ```
 

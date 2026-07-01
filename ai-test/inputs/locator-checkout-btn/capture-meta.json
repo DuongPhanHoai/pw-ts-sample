@@ -1,0 +1,22 @@
+{
+  "caseLabel": "locator-checkout-btn",
+  "capturedAt": "2026-07-01T07:53:22.566Z",
+  "source": {
+    "resultsJson": "reports/results.json",
+    "testResultsDir": "test-results"
+  },
+  "scope": "single",
+  "failureGroup": {
+    "id": "0",
+    "fingerprint": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14|- waiting for locator('#btn-checkout')",
+    "failureLocation": {
+      "file": "tests/pages/CheckoutPage.ts",
+      "line": 14
+    },
+    "callLog": "- waiting for locator('#btn-checkout')",
+    "memberTestNames": [
+      "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Sauce Labs Backpack\" as Test User"
+    ],
+    "representativeTestName": "cart-and-checkout.spec.ts > cart and checkout (data-driven) > checkout \"Sauce Labs Backpack\" as Test User"
+  }
+}

@@ -1,0 +1,176 @@
+{
+  "config": {
+    "configFile": "D:\\Testing\\pw-ts-sample\\playwright.config.ts",
+    "rootDir": "D:/Testing/pw-ts-sample/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 4
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/Testing/pw-ts-sample/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/Testing/pw-ts-sample/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 10000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "open": "never",
+          "outputFolder": "playwright-report"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "reports/junit-results.xml"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "reports/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.59.1",
+    "workers": 4,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "cart-and-checkout.spec.ts",
+      "file": "cart-and-checkout.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "cart and checkout (data-driven)",
+          "file": "cart-and-checkout.spec.ts",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "checkout \"Sauce Labs Backpack\" as Test User",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 10112,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts",
+                            "column": 21,
+                            "line": 14
+                          },
+                          "message": "Error: page.click: Test timeout of 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#btn-checkout')\u001b[22m\n\n\n\u001b[90m   at \u001b[39mpages\\CheckoutPage.ts:14\n\n\u001b[0m \u001b[90m 12 |\u001b[39m   \u001b[90m/** Walk the entire checkout, filling the form with the supplied customer. */\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m checkoutFullFlow(customer\u001b[33m:\u001b[39m \u001b[33mCheckoutCustomer\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 14 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mclick(\u001b[32m\"#btn-checkout\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#first-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mfirstName)\u001b[33m;\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#last-name\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mlastName)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mfill(\u001b[32m\"#postal-code\"\u001b[39m\u001b[33m,\u001b[39m customer\u001b[33m.\u001b[39mpostalCode)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at CheckoutPage.checkoutFullFlow (D:\\Testing\\pw-ts-sample\\tests\\pages\\CheckoutPage.ts:14:21)\u001b[22m\n\u001b[2m    at D:\\Testing\\pw-ts-sample\\tests\\cart-and-checkout.spec.ts:24:24\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-30T10:31:16.722Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-514e9--Labs-Backpack-as-Test-User-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "page-html",
+                          "contentType": "text/html",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-514e9--Labs-Backpack-as-Test-User-chromium\\attachments\\page-html-573e8445a35462ed942756a003c0b84580cdb6c4.html"
+                        },
+                        {
+                          "name": "page-css",
+                          "contentType": "text/css",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-514e9--Labs-Backpack-as-Test-User-chromium\\attachments\\page-css-05e5099ad052b23f5b15bfc571f8f373fc1fd145.css"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-514e9--Labs-Backpack-as-Test-User-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Testing\\pw-ts-sample\\test-results\\cart-and-checkout-cart-and-514e9--Labs-Backpack-as-Test-User-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8720fd7caf66f8b3d168-04e2cea0e0f7c8087aee",
+              "file": "cart-and-checkout.spec.ts",
+              "line": 10,
+              "column": 11
+            }
+          ],
+          "suites": []
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "expected": 0,
+    "unexpected": 1,
+    "skipped": 0,
+    "flaky": 0
+  }
+}
