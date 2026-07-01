@@ -28,6 +28,7 @@ A sample **Playwright + TypeScript** end-to-end suite for [SauceDemo](https://ww
 | **Run on laptop (no GitHub)** | [docs/LOCAL-RUN.md](docs/LOCAL-RUN.md) |
 | **CI on self-hosted runner + PR** | [docs/SELF-HOSTED-RUNNER.md](docs/SELF-HOSTED-RUNNER.md) |
 | **Analyze / apply design** | [docs/AI-POST-AUTO-HEAL.md](docs/AI-POST-AUTO-HEAL.md) |
+| **AI test eval & fixtures** | [ai-test/docs/Strategy.md](ai-test/docs/Strategy.md), [ai-test/inputs/](ai-test/inputs/) |
 | **Doc index & pipeline summary** | [docs/README.md](docs/README.md) |
 
 **Use README as the front door.** Keep deep setup, troubleshooting, and design in `docs/` so the root stays scannable.
@@ -51,6 +52,11 @@ pw-ts-sample/
 ├── playwright-report/              # generated HTML report (gitignored)
 ├── reports/                        # JSON/JUnit + AI outputs (gitignored)
 ├── testing-standards/              # markdown + auto-heal-policy.json
+├── ai-test/
+│   ├── docs/                       # evaluation strategy + ideas
+│   │   ├── Strategy.md
+│   │   └── ideas.md
+│   └── inputs/                     # reusable failure fixtures (<case-label>/)
 ├── docs/
 │   ├── README.md                   # documentation index
 │   ├── LOCAL-RUN.md                # run tests + AI on your laptop

@@ -14,6 +14,15 @@ This folder holds **detailed guides**. Use README for “what is this repo?”; 
 | **[SELF-HOSTED-RUNNER.md](SELF-HOSTED-RUNNER.md)** | CI on your Windows machine | Install runner, trigger **Playwright CI with Local AI**, artifacts, **auto PR**, troubleshooting |
 | **[AI-POST-AUTO-HEAL.md](AI-POST-AUTO-HEAL.md)** | Design & reference | Two-phase analyze, apply policy, LLM flow, safety, file map |
 
+### AI test (evaluation & fixtures)
+
+| Doc | Audience | Contents |
+|-----|----------|----------|
+| **[../ai-test/docs/LLM-EVAL-STRATEGY.md](../ai-test/docs/LLM-EVAL-STRATEGY.md)** | Leadership & evaluation | CEO-ready value case, LLM scorecard, rollout strategy |
+| **[../ai-test/docs/ideas.md](../ai-test/docs/ideas.md)** | Evaluation plan | LLM metrics, golden corpus, eval harness, observability |
+| **[../ai-test/docs/Strategy.md](../ai-test/docs/Strategy.md)** | Strategy (short) | Offline fixture eval; one case at a time; not CI |
+| **[../ai-test/inputs/](../ai-test/inputs/)** | Reusable fixtures | One folder per case (`<case-label>/results.json`, html, css, ground truth) |
+
 ---
 
 ## Pipeline at a glance
