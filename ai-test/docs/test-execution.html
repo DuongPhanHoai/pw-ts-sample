@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Test — Execution Design</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --card: #fff;
+      --text: #1a1d23;
+      --muted: #5c6370;
+      --border: #dfe3ea;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --green: #059669;
+      --green-soft: #ecfdf5;
+      --amber: #d97706;
+      --amber-soft: #fffbeb;
+      --purple: #7c3aed;
+      --purple-soft: #f5f3ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+
+    .page {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 3rem;
+    }
+
+    header {
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 1.05rem;
+      margin: 0;
+    }
+
+    .tip {
+      background: var(--accent-soft);
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      margin-top: 1rem;
+    }
+
+    h2 {
+      font-size: 1.15rem;
+      margin: 2rem 0 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Vertical pipeline */
+    .pipeline {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin: 1.25rem 0;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .step-num {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .step-body {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.15rem;
+      position: relative;
+    }
+
+    .step-body h3 {
+      margin: 0 0 0.35rem;
+      font-size: 1rem;
+    }
+
+    .step-body p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .step-body code {
+      font-size: 0.85em;
+      background: #f1f3f6;
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+    }
+
+    .arrow {
+      width: 48px;
+      display: flex;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 1.25rem;
+      line-height: 1;
+      padding: 0.15rem 0;
+    }
+
+    /* One-case flow */
+    .flow-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 1rem 0;
+    }
+
+    .box {
+      padding: 0.6rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: var(--card);
+    }
+
+    .box.input { background: var(--green-soft); border-color: #a7f3d0; color: #065f46; }
+    .box.process { background: var(--accent-soft); border-color: #bfdbfe; color: #1e40af; }
+    .box.llm { background: var(--purple-soft); border-color: #ddd6fe; color: #5b21b6; }
+    .box.score { background: var(--amber-soft); border-color: #fde68a; color: #92400e; }
+    .box.output { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+
+    .flow-arrow {
+      color: var(--muted);
+      font-size: 1.1rem;
+    }
+
+    /* Two columns */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 640px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    ul.simple {
+      margin: 0.5rem 0 0;
+      padding-left: 1.2rem;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    ul.simple li { margin: 0.25rem 0; }
+
+    .not-run {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      font-size: 0.9rem;
+      color: #991b1b;
+    }
+
+    .not-run strong { display: block; margin-bottom: 0.35rem; color: #7f1d1d; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 0.5rem 0.65rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th { background: #f1f3f6; font-weight: 600; }
+
+    .score-formula {
+      font-family: ui-monospace, monospace;
+      font-size: 0.85rem;
+      background: #f8fafc;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    footer {
+      margin-top: 2.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    @media print {
+      body { background: #fff; }
+      .page { max-width: none; padding: 0; }
+      .tip { display: none; }
+      .step-body, .card { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>AI Test — Execution Design</h1>
+      <p class="subtitle">
+        What happens when you run <code>npm run ai-test:suite</code>.
+        Offline LLM evaluation only — no browser, no Playwright, no auto-heal.
+      </p>
+      <p class="tip">
+        <strong>Export to PDF:</strong> open this file in a browser → <kbd>Ctrl+P</kbd> (or <kbd>Cmd+P</kbd>) → Save as PDF.
+      </p>
+    </header>
+
+    <section>
+      <h2>Big picture (5 steps)</h2>
+      <div class="pipeline">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>Start</h3>
+            <p>You run <code>npm run ai-test:suite</code>. It loads <code>.env</code> and checks LM Studio settings (<code>LMSTUDIO_BASE_URL</code>, <code>LMSTUDIO_MODEL</code>).</p>
+          </div>
+        </div>
+        <div class="arrow">↓</div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>Find cases</h3>
+            <p>Lists folders under <code>ai-test/inputs/</code> that contain <code>results.json</code>. Optional: <code>--case locator-typo</code> runs one case only.</p>
+          </div>
+        </div>
+        <div class="arrow">↓</div>
+
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>For each case → ask the LLM</h3>
+            <p>Read saved failure data from disk, send a <strong>triage</strong> prompt to LM Studio, get back groups (category, summary, which tests are duplicates).</p>
+          </div>
+        </div>
+        <div class="arrow">↓</div>
+
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h3>Score (if ground truth exists)</h3>
+            <p>Compare LLM output to <code>groundtruth.json</code>. Case <strong>passes</strong> if triage score ≥ 80% (default). Otherwise <strong>fail</strong>.</p>
+          </div>
+        </div>
+        <div class="arrow">↓</div>
+
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <h3>Write reports</h3>
+            <p>Latest report under <code>ai-reports/ai-test-suite.*</code>. History CSVs updated so you can compare models over time.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>One case — data flow</h2>
+      <div class="card">
+        <div class="flow-row">
+          <span class="box input">inputs/&lt;case&gt;/results.json</span>
+          <span class="flow-arrow">→</span>
+          <span class="box process">Parse failures</span>
+          <span class="flow-arrow">→</span>
+          <span class="box llm">Triage LLM</span>
+          <span class="flow-arrow">→</span>
+          <span class="box score">Score vs groundtruth</span>
+          <span class="flow-arrow">→</span>
+          <span class="box output">Report + CSV history</span>
+        </div>
+        <p style="margin: 0.75rem 0 0; font-size: 0.9rem; color: var(--muted);">
+          Attachments in the same folder (<code>error-context.md</code>, <code>page-html.html</code>, <code>page-css.css</code>) are read when building the failure payload. They are <em>not</em> fetched from a live test run.
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2>What each case folder contains</h2>
+      <div class="grid-2">
+        <div class="card">
+          <strong>Inputs (on disk before you run)</strong>
+          <ul class="simple">
+            <li><code>results.json</code> — saved Playwright JSON report</li>
+            <li><code>error-context.md</code> — optional snapshot</li>
+            <li><code>page-html.html</code>, <code>page-css.css</code> — optional page evidence</li>
+            <li><code>groundtruth.json</code> — expected triage for scoring</li>
+          </ul>
+        </div>
+        <div class="card">
+          <strong>Outputs (after each run)</strong>
+          <ul class="simple">
+            <li><code>ai-reports/ai-test-suite.md</code> — human summary</li>
+            <li><code>ai-reports/ai-test-suite.json</code> — full JSON</li>
+            <li><code>ai-reports/ai-test-suite/&lt;case&gt;/triage.json</code> — LLM result per case</li>
+            <li><code>ai-reports/ai-test-history/*.csv</code> — model comparison over time</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Inside step 3 — one LLM call per case</h2>
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>What</th>
+              <th>Where</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Load failure list from <code>results.json</code></td>
+              <td><code>case-report.ts</code></td>
+            </tr>
+            <tr>
+              <td>Load testing standards (markdown policy files)</td>
+              <td><code>triage-eval.ts</code></td>
+            </tr>
+            <tr>
+              <td>Build prompt + call LM Studio</td>
+              <td><code>scripts/lib/llm-batch.ts</code></td>
+            </tr>
+            <tr>
+              <td>Normalize groups / categories</td>
+              <td><code>scripts/lib/failure-triage.ts</code></td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="margin: 1rem 0 0; font-size: 0.9rem; color: var(--muted);">
+          All failures in one case are sent together in a <strong>single triage request</strong> (e.g. 18 duplicate checkout tests → one grouped answer).
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Scoring (step 4)</h2>
+      <div class="card">
+        <p style="margin-top: 0;">Only runs when <code>groundtruth.json</code> exists. Weighted score:</p>
+        <div class="score-formula">
+          triageScore = 35% root cause + 25% grouping + 25% category + 15% detail fields
+        </div>
+        <p style="margin-bottom: 0; font-size: 0.9rem; color: var(--muted);">
+          Default pass threshold: <strong>0.8</strong> (<code>--min-score</code> to change). A case with perfect grouping, category, and detail but no root-cause text match caps at <strong>65%</strong> → marked fail.
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2>What ai-test does <em>not</em> do</h2>
+      <div class="not-run">
+        <strong>Not part of this command</strong>
+        Playwright / browser tests · fix-plan LLM · apply patches · CI pipeline · re-run tests
+      </div>
+      <p style="margin-top: 0.75rem; font-size: 0.9rem; color: var(--muted);">
+        Fixtures are copied manually from a real Playwright run once. After that, evaluation replays files on disk only.
+      </p>
+    </section>
+
+    <section>
+      <h2>Commands</h2>
+      <div class="card">
+        <table>
+          <tbody>
+            <tr>
+              <td><code>npm run ai-test:suite</code></td>
+              <td>All cases</td>
+            </tr>
+            <tr>
+              <td><code>npm run ai-test:suite -- --case locator-typo</code></td>
+              <td>Single case</td>
+            </tr>
+            <tr>
+              <td><code>npm run ai-test:suite -- --open</code></td>
+              <td>Open markdown report when done</td>
+            </tr>
+            <tr>
+              <td><code>npm run ai-test:suite -- --min-score 0.65</code></td>
+              <td>Lower pass bar</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>Entry file map (short)</h2>
+      <div class="card">
+        <table>
+          <thead>
+            <tr><th>File</th><th>Role in one sentence</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>src/run-suite.ts</code></td><td>Main loop: cases → triage → score → report</td></tr>
+            <tr><td><code>src/lib/cases.ts</code></td><td>Discover and load input folders</td></tr>
+            <tr><td><code>src/lib/case-report.ts</code></td><td>Turn <code>results.json</code> into failure objects</td></tr>
+            <tr><td><code>src/lib/triage-eval.ts</code></td><td>Call triage LLM for one case</td></tr>
+            <tr><td><code>src/lib/score-triage.ts</code></td><td>Compare LLM output to ground truth</td></tr>
+            <tr><td><code>src/lib/suite-report.ts</code></td><td>Write MD/JSON reports</td></tr>
+            <tr><td><code>src/lib/suite-history.ts</code></td><td>Append model comparison CSVs</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>
+      pw-ts-sample · ai-test/docs/test-execution.html · Open in browser or print to PDF
+    </footer>
+  </div>
+</body>
+</html>

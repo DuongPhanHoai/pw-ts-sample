@@ -39,7 +39,7 @@ Requires LM Studio + `.env`.
 ```bash
 npm run ai-test:suite
 npm run ai-test:suite -- --case <case-label> --open
-start reports\ai-test-suite.md
+start ai-reports\ai-test-suite.md
 ```
 
 See [TESTING-SCENARIOS.md](../docs/TESTING-SCENARIOS.md) for cases to create. Strategy: [Strategy.md](../docs/Strategy.md).

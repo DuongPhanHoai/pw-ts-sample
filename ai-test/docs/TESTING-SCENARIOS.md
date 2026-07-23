@@ -315,7 +315,7 @@ This order matches Phase 1 in [LLM-EVAL-STRATEGY.md](LLM-EVAL-STRATEGY.md): **`o
 ```bash
 npm run ai-test:suite
 npm run ai-test:suite -- --case <case-label> --open
-start reports\ai-test-suite.md
+start ai-reports\ai-test-suite.md
 ```
 
 Add `groundtruth.json` with `evalSteps: ["triage"]` or `["triage","fixPlan"]` per scenario above.

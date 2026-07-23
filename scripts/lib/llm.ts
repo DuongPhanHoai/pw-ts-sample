@@ -107,11 +107,15 @@ export function parseJsonFromLlm(content: string): unknown {
 
 export interface ChatResult {
   content: string;
+  rawContent?: string;
   usage?: TokenUsageFromApi;
+  logPath?: string;
+  system?: string;
+  user?: string;
 }
 
 export interface ChatOptions {
-  /** File label under reports/llm-prompts/ (auto-generated if omitted). */
+  /** File label under the configured LLM prompt log directory (auto-generated if omitted). */
   label?: string;
   meta?: Record<string, unknown>;
 }
@@ -159,7 +163,7 @@ async function completeChat(
   const content = response.choices[0]?.message?.content ?? "";
   const usage = readUsage(response);
 
-  logLlmExchange({
+  const logPath = logLlmExchange({
     label: labelForAttempt(baseLabel, attempt),
     system,
     user,
@@ -177,7 +181,7 @@ async function completeChat(
     throw new Error("LLM returned empty response");
   }
 
-  return { content, usage };
+  return { content, rawContent: content, usage, logPath, system, user };
 }
 
 function logRetry(label: string, attempt: number, maxAttempts: number, reason: string): void {
@@ -210,7 +214,11 @@ export async function chatJson(
       const parsed = parseJsonFromLlm(result.content);
       return {
         content: JSON.stringify(parsed),
+        rawContent: result.content,
         usage: result.usage,
+        logPath: result.logPath,
+        system: result.system,
+        user: result.user,
       };
     } catch (err) {
       lastError = err;

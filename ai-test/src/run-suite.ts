@@ -1,5 +1,7 @@
 import "dotenv/config";
 import { execSync } from "node:child_process";
+import path from "node:path";
+import { paths } from "./paths";
 import { loadCases, listCaseLabels } from "./lib/cases";
 import { loadGroundTruth, scoreTriage } from "./lib/score-triage";
 import {
@@ -8,7 +10,7 @@ import {
   type SuiteCaseResult,
   type SuiteReport,
 } from "./lib/suite-report";
-import { runCaseTriage } from "./lib/triage-eval";
+import { runCaseTriageWithDebug } from "./lib/triage-eval";
 
 function usage(): never {
   console.log(`Usage:
@@ -18,7 +20,7 @@ Run triage LLM on each fixture case under ai-test/inputs/ (requires LM Studio + 
 
 Options:
   --case <label>             Repeatable; default = all cases with results.json
-  --open                     Open reports/ai-test-suite.md after run
+  --open                     Open ai-reports/ai-test-suite.md after run
   --min-score <0-1>          Fail case when triageScore is below (default 0.8, needs groundtruth.json)
 `);
   process.exit(1);
@@ -87,7 +89,7 @@ async function runCase(label: string, minScore?: number): Promise<SuiteCaseResul
     };
 
     console.log(`  [${label}] triage LLM (${testCase.failures.length} failure(s))…`);
-    const triage = await runCaseTriage(testCase.failures, stats);
+    const { triage, debug } = await runCaseTriageWithDebug(testCase.failures, stats);
 
     const groundTruth = loadGroundTruth(testCase.dir);
     let metrics;
@@ -109,6 +111,9 @@ async function runCase(label: string, minScore?: number): Promise<SuiteCaseResul
       hasGroundTruth: testCase.hasGroundTruth,
       durationMs: Date.now() - started,
       triage,
+      llmDebug: {
+        triage: debug,
+      },
       metrics,
       error:
         status === "fail" && metrics
@@ -148,6 +153,7 @@ async function main(): Promise<void> {
   }
 
   assertLlmConfigured();
+  process.env.LMSTUDIO_LLM_LOG_DIR ??= path.join(paths.reportsDir, "llm-prompts");
 
   const { flags, cases } = parseArgs(process.argv.slice(2));
   const labels = cases.length > 0 ? cases : listCaseLabels();
@@ -193,18 +199,18 @@ async function main(): Promise<void> {
 
   console.log("");
   console.log(renderSuiteMarkdown(report).split("\n").slice(0, 16).join("\n"));
-  console.log(`\nWrote reports/ai-test-suite.json`);
-  console.log(`Wrote reports/ai-test-suite.md`);
-  console.log(`Updated history: reports/ai-test-history/model_eval_history.csv`);
+  console.log(`\nWrote ai-reports/ai-test-suite.json`);
+  console.log(`Wrote ai-reports/ai-test-suite.md`);
+  console.log(`Updated history: ai-reports/ai-test-history/model_eval_history.csv`);
   console.log(`Run column: ${history.runColumn}`);
-  console.log(`Appended run log: reports/ai-test-history/model_eval_runs.csv`);
-  console.log(`Appended scores: reports/ai-test-history/model_eval_scores.csv`);
-  console.log(`Run snapshot: reports/ai-test-history/${history.runId}/`);
+  console.log(`Appended run log: ai-reports/ai-test-history/model_eval_runs.csv`);
+  console.log(`Appended scores: ai-reports/ai-test-history/model_eval_scores.csv`);
+  console.log(`Run snapshot: ai-reports/ai-test-history/${history.runId}/`);
 
   if (flags.open === "true") {
     openReport(markdown);
   } else {
-    console.log(`\nView report: start reports\\ai-test-suite.md`);
+    console.log(`\nView report: start ai-reports\\ai-test-suite.md`);
   }
 
   if (report.failed > 0 || report.errors > 0) {

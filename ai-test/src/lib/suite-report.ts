@@ -3,6 +3,7 @@ import path from "node:path";
 import type { FailureTriageResult } from "../../../scripts/lib/failure-triage";
 import { paths } from "../paths";
 import type { TriageMetrics } from "./score-triage";
+import type { TriageLlmDebug } from "./triage-eval";
 import { appendSuiteHistory, type SuiteHistoryResult } from "./suite-history";
 
 export type SuiteCaseStatus = "pass" | "fail" | "skipped" | "error";
@@ -16,6 +17,9 @@ export interface SuiteCaseResult {
   durationMs?: number;
   error?: string;
   triage?: FailureTriageResult;
+  llmDebug?: {
+    triage?: TriageLlmDebug;
+  };
   metrics?: TriageMetrics;
 }
 
@@ -100,16 +104,18 @@ export function renderSuiteMarkdown(report: SuiteReport): string {
     "",
     "## Outputs",
     "",
-    "- JSON: `reports/ai-test-suite.json`",
-    "- Per-case triage: `reports/ai-test-suite/<case-label>/triage.json`",
-    "- History matrix: `reports/ai-test-history/model_eval_history.csv` — `pass 85.0% (8.1s)` when scored",
-    "- Run log: `reports/ai-test-history/model_eval_runs.csv` — aggregate triage metrics per run",
-    "- Score detail: `reports/ai-test-history/model_eval_scores.csv` — one row per case per run for pivot/compare",
+    "- JSON: `ai-reports/ai-test-suite.json`",
+    "- Per-case triage: `ai-reports/ai-test-suite/<case-label>/triage.json`",
+    "- LLM prompts: `ai-reports/llm-prompts/`",
+    "- History matrix: `ai-reports/ai-test-history/model_eval_history.csv` — `pass 85.0% (8.1s)` when scored",
+    "- Run log: `ai-reports/ai-test-history/model_eval_runs.csv` — aggregate triage metrics per run",
+    "- Score detail: `ai-reports/ai-test-history/model_eval_scores.csv` — one row per case per run for pivot/compare",
+    "- Run snapshot: `ai-reports/ai-test-history/<timestamp>_<model>/<case-label>/` — triage prompt, response, and debug metadata",
     "",
     "Open this report:",
     "",
     "```powershell",
-    "start reports\\ai-test-suite.md",
+    "start ai-reports\\ai-test-suite.md",
     "```",
     "",
   );

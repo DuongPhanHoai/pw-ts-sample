@@ -30,7 +30,7 @@ export function loadGroundTruth(caseDir: string): GroundTruth | undefined {
 function setOverlap(a: Set<string>, b: Set<string>): number {
   let count = 0;
   for (const item of a) {
-    if (b.has(item)) count++;
+    if (b.has(item)) count++  ;
   }
   return count;
 }

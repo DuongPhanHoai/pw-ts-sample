@@ -285,6 +285,54 @@ function appendScoreRows(
   );
 }
 
+function writeCaseTriageDebug(caseDir: string, c: SuiteCaseResult): void {
+  const debug = c.llmDebug?.triage;
+  if (!debug) return;
+
+  fs.writeFileSync(
+    path.join(caseDir, "triage-prompt.txt"),
+    `--- SYSTEM ---\n${debug.prompt.system}\n\n--- USER ---\n${debug.prompt.user}\n`,
+    "utf8",
+  );
+
+  fs.writeFileSync(
+    path.join(caseDir, "triage-response.json"),
+    `${debug.response.content}\n`,
+    "utf8",
+  );
+
+  if (debug.response.rawContent && debug.response.rawContent !== debug.response.content) {
+    fs.writeFileSync(
+      path.join(caseDir, "triage-response.raw.txt"),
+      `${debug.response.rawContent}\n`,
+      "utf8",
+    );
+  }
+
+  fs.writeFileSync(
+    path.join(caseDir, "llm-debug.json"),
+    JSON.stringify(
+      {
+        phase: "triage",
+        model: process.env.LMSTUDIO_MODEL,
+        usage: debug.response.usage,
+        globalLogPath: debug.response.logPath,
+        files: {
+          prompt: "triage-prompt.txt",
+          response: "triage-response.json",
+          rawResponse:
+            debug.response.rawContent && debug.response.rawContent !== debug.response.content
+              ? "triage-response.raw.txt"
+              : undefined,
+        },
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+}
+
 export interface SuiteHistoryResult {
   runId: string;
   runDir: string;
@@ -316,6 +364,7 @@ export function appendSuiteHistory(report: SuiteReport): SuiteHistoryResult {
       JSON.stringify(c.triage, null, 2),
       "utf8",
     );
+    writeCaseTriageDebug(caseDir, c);
   }
 
   const templates = loadCaseTemplates();

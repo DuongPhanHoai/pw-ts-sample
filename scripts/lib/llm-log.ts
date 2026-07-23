@@ -39,7 +39,7 @@ function safeLogFileName(label: string): string {
 }
 
 export function getLlmLogFilePath(label: string, sequence: number): string {
-  const dir = path.join(path.dirname(paths.resultsJson), "llm-prompts");
+  const dir = process.env.LMSTUDIO_LLM_LOG_DIR || path.join(path.dirname(paths.resultsJson), "llm-prompts");
   const seq = String(sequence).padStart(3, "0");
   return path.join(dir, `${seq}_${safeLogFileName(label)}.txt`);
 }
@@ -53,12 +53,12 @@ export interface LlmExchangeLog {
   usage?: TokenUsageFromApi;
 }
 
-/** Log full LLM request + response to reports/llm-prompts/ (on by default). */
+/** Log full LLM request + response to reports/llm-prompts/ or LMSTUDIO_LLM_LOG_DIR (on by default). */
 export function logLlmExchange(input: LlmExchangeLog): string | undefined {
   if (!shouldLogLlmExchanges()) return undefined;
 
   exchangeCounter += 1;
-  const dir = path.join(path.dirname(paths.resultsJson), "llm-prompts");
+  const dir = process.env.LMSTUDIO_LLM_LOG_DIR || path.join(path.dirname(paths.resultsJson), "llm-prompts");
   fs.mkdirSync(dir, { recursive: true });
 
   const filePath = getLlmLogFilePath(input.label, exchangeCounter);

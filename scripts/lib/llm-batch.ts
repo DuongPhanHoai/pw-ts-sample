@@ -7,7 +7,7 @@ import {
   type FailureTriageGroup,
   type FailureTriageResult,
 } from "./failure-triage";
-import { chatJson, chatText } from "./llm";
+import { chatJson, chatText, type ChatResult } from "./llm";
 
 export type StandardsContext = {
   uiStandards: string;
@@ -184,6 +184,20 @@ Review duplicates, group by root cause, and decide detailFieldsNeeded for step 2
 ${JSON.stringify(summaries, null, 2)}`;
 }
 
+export interface FailureTriageLlmResult {
+  triage: FailureTriageResult;
+  prompt: {
+    system: string;
+    user: string;
+  };
+  response: {
+    content: string;
+    rawContent?: string;
+    usage?: ChatResult["usage"];
+    logPath?: string;
+  };
+}
+
 export function buildFixPlanDetailUserPrompt(
   ctx: StandardsContext,
   group: FailureTriageGroup,
@@ -213,6 +227,15 @@ export async function requestFailureTriage(
   failures: FailedTest[],
   stats: { passed: number; failed: number; skipped: number },
 ): Promise<FailureTriageResult> {
+  const result = await requestFailureTriageWithDebug(ctx, failures, stats);
+  return result.triage;
+}
+
+export async function requestFailureTriageWithDebug(
+  ctx: StandardsContext,
+  failures: FailedTest[],
+  stats: { passed: number; failed: number; skipped: number },
+): Promise<FailureTriageLlmResult> {
   const user = buildTriageUserPrompt(ctx, failures, stats);
   const result = await chatJson(TRIAGE_SYSTEM, user, {
     label: "failure-triage",
@@ -222,7 +245,19 @@ export async function requestFailureTriage(
     },
   });
 
-  return JSON.parse(result.content) as FailureTriageResult;
+  return {
+    triage: JSON.parse(result.content) as FailureTriageResult,
+    prompt: {
+      system: result.system ?? TRIAGE_SYSTEM,
+      user: result.user ?? user,
+    },
+    response: {
+      content: result.content,
+      rawContent: result.rawContent,
+      usage: result.usage,
+      logPath: result.logPath,
+    },
+  };
 }
 
 export async function requestFixPlanForGroup(
