@@ -3,4 +3,5 @@
 /playwright-report/
 /test-results/
 /reports/
+/ai-reports/
 scripts/**/*.js
