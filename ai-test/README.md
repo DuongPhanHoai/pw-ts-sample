@@ -39,7 +39,7 @@ start ai-reports\ai-test-suite.md
 
 
 
-Each run adds a column to **`ai-reports/ai-test-history/model_eval_history.csv`** (`{LMSTUDIO_MODEL} @ {UTC timestamp}`), appends **`model_eval_runs.csv`** (run aggregates), and **`model_eval_scores.csv`** (per-case triage metrics for pivot/compare). Full snapshots live under `ai-reports/ai-test-history/<timestamp>_<model>/`.
+Each run adds a column to **`ai-reports/ai-test-history/model_eval_history.csv`** (`{LMSTUDIO_MODEL} @ {UTC timestamp}`), appends **`model_eval_runs.csv`** (run aggregates), **`model_eval_scores.csv`** (per-case triage metrics), and **`model_eval_groundtruth_details.csv`** (expected vs actual comparison rows). Full snapshots live under `ai-reports/ai-test-history/<timestamp>_<model>/`.
 
 
 
@@ -52,6 +52,10 @@ Each run adds a column to **`ai-reports/ai-test-history/model_eval_history.csv`*
 | `model_eval_runs.csv` | Run totals + avg triage score components |
 
 | `model_eval_scores.csv` | Filter by `model` / `case`; compare `triage_score`, grouping F1, category accuracy, etc. |
+
+| `model_eval_groundtruth_details.csv` | Review expected value, actual value, match %, and match/notmatch per check |
+
+| `<timestamp>_<model>/model_eval_groundtruth_details.csv` | Same groundtruth detail rows scoped to one run |
 
 
 

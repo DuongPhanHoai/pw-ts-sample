@@ -96,7 +96,7 @@ async function runCase(label: string, minScore?: number): Promise<SuiteCaseResul
     let status: SuiteCaseResult["status"] = "pass";
 
     if (groundTruth) {
-      metrics = scoreTriage(triage, groundTruth);
+      metrics = await scoreTriage(triage, groundTruth);
       const threshold = minScore ?? 0.8;
       if (metrics && metrics.triageScore < threshold) {
         status = "fail";
@@ -205,7 +205,9 @@ async function main(): Promise<void> {
   console.log(`Run column: ${history.runColumn}`);
   console.log(`Appended run log: ai-reports/ai-test-history/model_eval_runs.csv`);
   console.log(`Appended scores: ai-reports/ai-test-history/model_eval_scores.csv`);
+  console.log(`Appended groundtruth details: ai-reports/ai-test-history/model_eval_groundtruth_details.csv`);
   console.log(`Run snapshot: ai-reports/ai-test-history/${history.runId}/`);
+  console.log(`Run detail CSV: ai-reports/ai-test-history/${history.runId}/model_eval_groundtruth_details.csv`);
 
   if (flags.open === "true") {
     openReport(markdown);

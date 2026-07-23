@@ -110,6 +110,8 @@ export function renderSuiteMarkdown(report: SuiteReport): string {
     "- History matrix: `ai-reports/ai-test-history/model_eval_history.csv` — `pass 85.0% (8.1s)` when scored",
     "- Run log: `ai-reports/ai-test-history/model_eval_runs.csv` — aggregate triage metrics per run",
     "- Score detail: `ai-reports/ai-test-history/model_eval_scores.csv` — one row per case per run for pivot/compare",
+    "- Groundtruth detail: `ai-reports/ai-test-history/model_eval_groundtruth_details.csv` — expected vs actual values and match %",
+    "- Current run detail: `ai-reports/ai-test-history/<timestamp>_<model>/model_eval_groundtruth_details.csv`",
     "- Run snapshot: `ai-reports/ai-test-history/<timestamp>_<model>/<case-label>/` — triage prompt, response, and debug metadata",
     "",
     "Open this report:",

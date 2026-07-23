@@ -9,6 +9,7 @@ const HISTORY_DIR = path.join(paths.reportsDir, "ai-test-history");
 const HISTORY_CSV = path.join(HISTORY_DIR, "model_eval_history.csv");
 const RUNS_CSV = path.join(HISTORY_DIR, "model_eval_runs.csv");
 const SCORES_CSV = path.join(HISTORY_DIR, "model_eval_scores.csv");
+const DETAIL_CSV = path.join(HISTORY_DIR, "model_eval_groundtruth_details.csv");
 
 const FIXED_COLUMNS = ["case", "eval_step", "has_ground_truth", "failure_count"] as const;
 
@@ -44,6 +45,21 @@ const SCORES_COLUMNS = [
   "duplicate_grouping_f1",
   "category_accuracy",
   "detail_field_accuracy",
+] as const;
+
+const DETAIL_COLUMNS = [
+  "run_column",
+  "model",
+  "started_at_utc",
+  "case",
+  "test_name",
+  "group_id",
+  "check",
+  "expected_value",
+  "actual_value",
+  "match_percent",
+  "match",
+  "note",
 ] as const;
 
 function sanitizeForPath(value: string): string {
@@ -285,6 +301,37 @@ function appendScoreRows(
   );
 }
 
+function detailRows(
+  runColumn: string,
+  report: SuiteReport,
+  startedAt: Date,
+): (string | number | boolean | undefined)[][] {
+  return report.cases.flatMap((c) =>
+    (c.metrics?.details ?? []).map((d) => [
+      runColumn,
+      report.model ?? "",
+      startedAt.toISOString(),
+      c.label,
+      d.testName,
+      d.groupId,
+      d.check,
+      d.expectedValue,
+      d.actualValue,
+      d.matchPercent.toFixed(1),
+      d.match ? "match" : "notmatch",
+      d.note,
+    ]),
+  );
+}
+
+function appendDetailRows(
+  runColumn: string,
+  report: SuiteReport,
+  startedAt: Date,
+): void {
+  appendCsvRows(DETAIL_CSV, DETAIL_COLUMNS, detailRows(runColumn, report, startedAt));
+}
+
 function writeCaseTriageDebug(caseDir: string, c: SuiteCaseResult): void {
   const debug = c.llmDebug?.triage;
   if (!debug) return;
@@ -339,6 +386,7 @@ export interface SuiteHistoryResult {
   historyCsv: string;
   runsCsv: string;
   scoresCsv: string;
+  detailCsv: string;
   runColumn: string;
 }
 
@@ -354,6 +402,13 @@ export function appendSuiteHistory(report: SuiteReport): SuiteHistoryResult {
 
   fs.mkdirSync(runDir, { recursive: true });
   fs.writeFileSync(path.join(runDir, "suite.json"), JSON.stringify(report, null, 2), "utf8");
+  fs.writeFileSync(
+    path.join(runDir, "model_eval_groundtruth_details.csv"),
+    `${csvRow([...DETAIL_COLUMNS])}\n${detailRows(runColumn, report, startedAt)
+      .map((row) => csvRow(row))
+      .join("\n")}\n`,
+    "utf8",
+  );
 
   for (const c of report.cases) {
     if (!c.triage) continue;
@@ -403,6 +458,7 @@ export function appendSuiteHistory(report: SuiteReport): SuiteHistoryResult {
   writeHistoryMatrix(fieldnames, rows);
   appendRunMetadata(runColumn, report, startedAt, finishedAt);
   appendScoreRows(runColumn, report, startedAt);
+  appendDetailRows(runColumn, report, startedAt);
 
   return {
     runId,
@@ -410,6 +466,7 @@ export function appendSuiteHistory(report: SuiteReport): SuiteHistoryResult {
     historyCsv: HISTORY_CSV,
     runsCsv: RUNS_CSV,
     scoresCsv: SCORES_CSV,
+    detailCsv: DETAIL_CSV,
     runColumn,
   };
 }

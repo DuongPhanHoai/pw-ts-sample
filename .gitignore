@@ -3,5 +3,6 @@
 /playwright-report/
 /test-results/
 /reports/
+/reports_bk/
 /ai-reports/
 scripts/**/*.js

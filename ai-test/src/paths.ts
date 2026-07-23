@@ -18,4 +18,5 @@ export const paths = {
   modelEvalHistoryCsv: path.join(projectRoot, "ai-reports", "ai-test-history", "model_eval_history.csv"),
   modelEvalRunsCsv: path.join(projectRoot, "ai-reports", "ai-test-history", "model_eval_runs.csv"),
   modelEvalScoresCsv: path.join(projectRoot, "ai-reports", "ai-test-history", "model_eval_scores.csv"),
+  modelEvalGroundtruthDetailsCsv: path.join(projectRoot, "ai-reports", "ai-test-history", "model_eval_groundtruth_details.csv"),
 };
