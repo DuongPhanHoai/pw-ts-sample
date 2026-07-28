@@ -2,7 +2,6 @@
 /.idea/
 /playwright-report/
 /test-results/
-/reports/
-/reports_bk/
+/reports*/
 /ai-reports/
 scripts/**/*.js
